@@ -642,6 +642,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mpn_sub(ab2, ab2, nb_block_coeff * 2 + 2, ABpts_inf, 2 * nb_block_coeff); // (P(1) + P(-1))/2 - P(0) - P(inf)
 
 
+
 	//AB3 <- -2P(inf) + (P(2) - P(-1))/6 + (P(0) - P(1))/2, need one aux var
 	mpn_copyd(ab3, ABpts_inf, nb_block_coeff * 2); // P(inf)
 	
@@ -690,11 +691,11 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 
-	/*gmp_printf("%Nd \n\n", ab0,  2 * nb_block_coeff);
-	//gmp_printf("%Nd \n\n", ab1,  2 * nb_block_coeff + 2);
-	gmp_printf("%Nd \n\n", ab2, 2 * nb_block_coeff + 2);
-	gmp_printf("%Nd \n\n", ab3,  2 * nb_block_coeff + 2);
-	gmp_printf("%Nd \n\n", ab4, 2 * nb_block_coeff);*/
+	//gmp_printf("AB0 : %Nd \n\n", ab0, 2 * nb_block_coeff);
+	//gmp_printf("AB1 : %Nd \n\n", ab1, 2 * nb_block_coeff + 2);
+	gmp_printf("AB2 : %Nd \n\n", ab2, 2 * nb_block_coeff + 2);
+	//gmp_printf("AB3 : %Nd \n\n", ab3, 2 * nb_block_coeff + 2);
+	//gmp_printf("AB4 : %Nd \n\n", ab4, 2 * nb_block_coeff);
 
 
 }
@@ -770,10 +771,9 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	mpz_t AB[5];
 	calcAB(ABpts, AB);
 
-	for (int i = 0; i < 5; ++i)
+	for (int i = 2; i < 3; ++i)
 	{
-		//gmp_printf("AB%d : %Zd\n\n", i, AB[i]);
-
+		gmp_printf("AB%d : %Zd\n\n", i, AB[i]);
 	}
 
 	mpz_t tmp, tmp2;
