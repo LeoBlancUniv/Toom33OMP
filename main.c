@@ -376,7 +376,9 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mp_limb_t* ab3 = scratch + ab_offset + nb_block_coeff * 6 + 2;	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab4 = scratch + ab_offset + nb_block_coeff * 2; 		// nb_block_coeff * 2
 
-	mp_limb_t* ab3_aux = scratch + aux_offset;
+	mp_limb_t* ab2_aux = scratch + aux_offset;		// nb_block_coeff * 2 + 1
+	//mp_limb_t* ab3_aux = scratch + aux_offset;
+
 
 	printf("mpn version\n");
 
@@ -473,6 +475,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	//Apts_one <- a2 + a1 + a0
 	mpn_add(Apts_one, Apts_one, nb_block_coeff + 1, a2, nb_block_last_coeff);
+
 
 	
 	//Apts_zero <- a0 :
@@ -573,10 +576,14 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	//Bpts_one <- b2 + b1 + b0
 	mpn_add(Bpts_one, Bpts_one, nb_block_coeff + 1, b2, nb_block_last_coeff);
 
+
 	
 	//Bpts_zero <- b0 :
 
 	mpn_copyd(Bpts_zero, b0, nb_block_coeff);
+
+
+
 
 
 	/*gmp_printf("Bpts0 : %Nd \n\n", Bpts_inf,  nb_block_last_coeff);
@@ -602,11 +609,14 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mpn_mul_n(ABpts_two, Apts_two, Bpts_two, nb_block_coeff + 1);
 
 	mpn_mul_n(ABpts_mone, Apts_mone, Bpts_mone, nb_block_coeff + 1);
-	
 	ABpts_mone_sign = Apts_mone_sign == Bpts_mone_sign;
 
 	mpn_mul_n(ABpts_one, Apts_one, Bpts_one, nb_block_coeff + 1);
 	mpn_mul_n(ABpts_zero, Apts_zero, Bpts_zero, nb_block_coeff);
+
+
+
+
 
 	/*gmp_printf("ABpts0 : %Nd \n\n", ABpts_inf,  2 * nb_block_coeff);
 	gmp_printf("ABpts1 : %Nd \n\n", ABpts_two,  2 * nb_block_coeff + 2);
@@ -623,10 +633,46 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 
+
+
 	//AB calc
 
 	//AB0 <- P(0)
 	mpn_copyd(ab0, ABpts_zero, nb_block_coeff * 2);
+
+
+
+	//AB2 <- -P(0) -P(inf) + (P(1) + P(-1))/2, need one aux var
+
+	if (mpn_add_n(ab2_aux, ABpts_zero, ABpts_inf, nb_block_coeff * 2)){ // aux : P(0) + P(inf)
+		ab2_aux[nb_block_coeff * 2] = 1;
+	}
+	//we treat ab2_aux as negative so, aux : -(P(0) + P(inf))
+
+
+	if (ABpts_mone_sign){
+		if (mpn_add_n(ab2, ABpts_mone, ABpts_one, nb_block_coeff * 2 + 2)){ // P(-1) + P(1)
+			ab2[nb_block_coeff * 2 + 2] = 1;
+			mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 3);
+		}
+		else{
+			mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2);
+		}
+	}
+	else{
+		if (mpn_cmp(ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2) >= 0){
+			mpn_sub_n(ab2, ABpts_mone, ABpts_one, nb_block_coeff * 2 + 2); // P(-1) - P(1), considered as pos
+		}
+		else{
+			mpn_sub_n(ab2, ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2); // P(1) - P(-1), considered as neg
+		}
+		mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2);
+
+	}
+
+	
+
+
 
 
 	//AB2 <- -P(0) -P(inf) + (P(1) + P(-1))/2, no aux var req
@@ -644,7 +690,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 	//AB3 <- -2P(inf) + (P(2) - P(-1))/6 + (P(0) - P(1))/2, need one aux var
-	mpn_copyd(ab3, ABpts_inf, nb_block_coeff * 2); // P(inf)
+	/*mpn_copyd(ab3, ABpts_inf, nb_block_coeff * 2); // P(inf)
 	
 	if (mpn_lshift(ab3, ab3, nb_block_coeff * 2, 1)){ // 2P(inf)
 		ab3[nb_block_coeff * 2] = 1;
@@ -682,7 +728,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mpn_divexact_by3(ab3_aux, ab3_aux, nb_block_coeff * 2 + 2); // aux : (-P(-1) + P(2)) / 6
 
 	mpn_add_n(ab3, ab3, ab3_aux, nb_block_coeff * 2 + 2); // -2P(inf) + (P(2) - P(-1))/6 + (P(0) - P(1))/2
-
+*/
 
 
 
