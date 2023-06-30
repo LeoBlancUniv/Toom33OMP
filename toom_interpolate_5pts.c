@@ -80,6 +80,9 @@ mpn_toom_interpolate_5pts (mp_ptr ret, mp_ptr v2, mp_ptr vm1,
   /* (2) vm1 <- tm1 := (v1 - vm1) / 2  [(1 1 1 1 1) - (1 -1 1 -1 1)] / 2 =
      tm1 >= 0                                         (0  1 0  1 0)
      No carry comes out from {v1, kk1} +/- {vm1, kk1},
+
+    //
+
      and the division by two is exact.
      If (vm1_sign!=0) the sign of vm1 is negative */
   if (vm1_sign)
