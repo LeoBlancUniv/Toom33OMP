@@ -653,10 +653,10 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	if (ABpts_mone_sign){
 		if (mpn_add_n(ab2, ABpts_mone, ABpts_one, nb_block_coeff * 2 + 2)){ // P(-1) + P(1)
 			ab2[nb_block_coeff * 2 + 2] = 1;
-			mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 3);
+			mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 3, 1);
 		}
 		else{
-			mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2);
+			mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2, 1);
 		}
 	}
 	else{
@@ -666,7 +666,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 		else{
 			mpn_sub_n(ab2, ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2); // P(1) - P(-1), considered as neg
 		}
-		mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2);
+		mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2, 1);
 
 	}
 
