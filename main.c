@@ -342,7 +342,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	#define bpts_offset 5*nb_block_coeff + 3
 	#define abpts_offset bpts_offset + 5*nb_block_coeff + 3
 	#define ab_offset abpts_offset + 10*nb_block_coeff + 6
-	#define aux_offset ab_offset + 15*nb_block_coeff
+	#define aux_offset ab_offset + 10*nb_block_coeff + 6
 
 	mp_limb_t* Apts_inf =  scratch; 						 // nb_block_last_coeff 
 	mp_limb_t* Apts_two =  scratch + nb_block_coeff * 4 + 2; // nb_block_coeff + 1
@@ -370,13 +370,13 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	int ABpts_mone_sign;
 
-	mp_limb_t* ab0 = scratch + ab_offset;
-	mp_limb_t* ab1 = scratch + ab_offset + nb_block_coeff *15;
+	mp_limb_t* ab0 = scratch + ab_offset;							// nb_block_coeff * 2
+	mp_limb_t* ab1 = scratch + ab_offset + nb_block_coeff * 8 + 4;	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab2 = scratch + ab_offset + nb_block_coeff * 4; 		// nb_block_coeff * 2 + 2
 	mp_limb_t* ab3 = scratch + ab_offset + nb_block_coeff * 6 + 2;	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab4 = scratch + ab_offset + nb_block_coeff * 2; 		// nb_block_coeff * 2
 
-	mp_limb_t* ab2_aux = scratch + aux_offset;		// nb_block_coeff * 2 + 1
+	mp_limb_t* aux_inter_6 = scratch + aux_offset;		// nb_block_coeff * 2
 	//mp_limb_t* ab3_aux = scratch + aux_offset;
 
 
@@ -635,100 +635,134 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 
+	// trying to recreate steps from interpolate (mpn version):
+
+	/* 
+		(1) v2 <- v2-vm1 < v2+|vm1| : (16 8 4 2 1) - (1 -1 1 -1  1) = (15 9 3  3  0)
+		we need can do v2 <- v2 - |vm1|
+
+		then
+
+		v2 <- v2 / 3 : (15 9 3  3  0)/3 =  (5 3 1 1 0)
+	*/
+
+	if (ABpts_mone_sign){ //pos
+		mpn_sub_n(ABpts_two, ABpts_two, ABpts_mone, nb_block_coeff * 2 + 2);
+	}
+	else{ //neg
+		mpn_add_n(ABpts_two, ABpts_two, ABpts_mone, nb_block_coeff * 2 + 2);
+	}
+
+	mpn_divexact_by3 (ABpts_two, ABpts_two, nb_block_coeff * 2 + 2);
+
+	//test (1)
+
+	gmp_printf("(1) v2 : %Nd\n\n", ABpts_two, nb_block_coeff * 2 + 2);
+
+
+
+	/*
+		(2) vm1 <- tm1 := (v1 - vm1) / 2 : [(1 1 1 1 1) - (1 -1 1 -1 1)] / 2 = (0  1 0  1 0)
+		we can do v1 - |vm1|
+	*/
+
+	if (ABpts_mone_sign){ //pos
+		mpn_sub_n(ABpts_mone, ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2);
+	}
+	else //neg
+	{
+		mpn_add_n(ABpts_mone, ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2);
+	}
+
+	mpn_rshift(ABpts_mone, ABpts_mone, nb_block_coeff * 2 + 2, 1);
+
+	gmp_printf("(2) vm1 : %Nd\n\n", ABpts_mone, nb_block_coeff * 2 + 2);
+
+
+
+
+	/*
+		(3) v1 <- t1 := v1 - v0 : (1 1 1 1 1) - (0 0 0 0 1) = (1 1 1 1 0)
+	*/
+
+	mpn_sub(ABpts_one, ABpts_one, nb_block_coeff * 2 + 2, ABpts_zero, nb_block_coeff * 2);
+
+	gmp_printf("(3) v1 : %Nd\n\n", ABpts_one, nb_block_coeff * 2 + 2);
+
+
+
+
+	/*
+		(4) v2 <- t2 := ((v2-vm1)/3-t1)/2 = (v2-vm1-3*t1)/6 : [(5 3 1 1 0) - (1 1 1 1 0)]/2 = (2 1 0 0 0)
+		(v2 - vm1)/3 is v2 currently
+		t1 is v1 currently
+		so we do v2 <- (v2 - v1) / 2
+	*/
+
+	mpn_sub_n(ABpts_two, ABpts_two, ABpts_one, nb_block_coeff * 2 + 2);
+	mpn_rshift(ABpts_two, ABpts_two, nb_block_coeff * 2 + 2, 1);
+
+	gmp_printf("(4) v2 : %Nd\n\n", ABpts_two, nb_block_coeff * 2 + 2);
+
+
+
+
+	/*
+		(5) v1 <- t1-tm1 : (1 1 1 1 0) - (0 1 0 1 0) = (1 0 1 0 0)
+		t1 is v1 currently
+		tm1 is vm1 currently
+		so we do v1 <- v1 - vm1
+	*/
+
+	mpn_sub_n(ABpts_one, ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2);
+
+	gmp_printf("(5) v1 : %Nd\n\n", ABpts_one, nb_block_coeff * 2 + 2);
+
+
+
+	
+	/*
+		(6) v2 <- v2 - 2*vinf : (2 1 0 0 0) - 2*(1 0 0 0 0) = (0 1 0 0 0)
+	*/
+
+	mpn_copyd(aux_inter_6, ABpts_inf, nb_block_coeff * 2);
+
+	mpn_lshift(aux_inter_6, aux_inter_6, nb_block_coeff * 2, 1);
+
+	mpn_sub(ab3, ABpts_two, nb_block_coeff * 2 + 2, aux_inter_6, nb_block_coeff * 2);
+
+	gmp_printf("(6) v2 : %Nd\n\n", ABpts_two, nb_block_coeff * 2 + 2);
+
+
+
+
+	/*
+		(7) v1 <- v1 - vinf : (1 0 1 0 0) - (1 0 0 0 0) = (0 0 1 0 0)
+	*/
+
+	mpn_sub(ab2, ABpts_one, nb_block_coeff * 2 + 2, ABpts_inf, nb_block_coeff * 2);
+
+	gmp_printf("(7) v1 : %Nd\n\n", ABpts_one, nb_block_coeff * 2 + 2);
+
+
+
+
+	/*
+		(8) vm1 <- vm1-v2 : (0 1 0 1 0) - (0 1 0 0 0) = (0 0 0 1 0)
+	*/
+
+	mpn_sub_n(ab1, ABpts_mone, ab3, nb_block_coeff * 2 + 2);
+
+	gmp_printf("(8) vm1 : %Nd\n\n", ABpts_mone, nb_block_coeff * 2 + 2);
+
+
 	//AB calc
 
 	//AB0 <- P(0)
 	mpn_copyd(ab0, ABpts_zero, nb_block_coeff * 2);
 
 
-
-	//AB2 <- -P(0) -P(inf) + (P(1) + P(-1))/2, need one aux var
-
-	if (mpn_add_n(ab2_aux, ABpts_zero, ABpts_inf, nb_block_coeff * 2)){ // aux : P(0) + P(inf)
-		ab2_aux[nb_block_coeff * 2] = 1;
-	}
-	//we treat ab2_aux as negative so, aux : -(P(0) + P(inf))
-
-
-	if (ABpts_mone_sign){
-		if (mpn_add_n(ab2, ABpts_mone, ABpts_one, nb_block_coeff * 2 + 2)){ // P(-1) + P(1)
-			ab2[nb_block_coeff * 2 + 2] = 1;
-			mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 3, 1);
-		}
-		else{
-			mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2, 1);
-		}
-	}
-	else{
-		if (mpn_cmp(ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2) >= 0){
-			mpn_sub_n(ab2, ABpts_mone, ABpts_one, nb_block_coeff * 2 + 2); // P(-1) - P(1), considered as pos
-		}
-		else{
-			mpn_sub_n(ab2, ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2); // P(1) - P(-1), considered as neg
-		}
-		mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2, 1);
-
-	}
-
 	
-
-
-
-
-	//AB2 <- -P(0) -P(inf) + (P(1) + P(-1))/2, no aux var req
-
-	mpn_copyd(ab2, ABpts_one, nb_block_coeff * 2 + 2); // P(1)
-	if (mpn_add_n(ab2, ab2, ABpts_mone, nb_block_coeff * 2 + 2)){ // P(1) + P(-1)
-		ab2[nb_block_coeff * 2 + 2] = 1;
-	}
-	mpn_rshift(ab2, ab2, nb_block_coeff * 2 + 2, 1); // (P(1) + P(-1))/2
-
-	mpn_sub(ab2, ab2, nb_block_coeff * 2 + 2, ABpts_zero, 2 * nb_block_coeff); // (P(1) + P(-1))/2 - P(0)
-	
-	mpn_sub(ab2, ab2, nb_block_coeff * 2 + 2, ABpts_inf, 2 * nb_block_coeff); // (P(1) + P(-1))/2 - P(0) - P(inf)
-
-
-
-	//AB3 <- -2P(inf) + (P(2) - P(-1))/6 + (P(0) - P(1))/2, need one aux var
-	/*mpn_copyd(ab3, ABpts_inf, nb_block_coeff * 2); // P(inf)
-	
-	if (mpn_lshift(ab3, ab3, nb_block_coeff * 2, 1)){ // 2P(inf)
-		ab3[nb_block_coeff * 2] = 1;
-	}
-
-	mpn_neg(ab3, ab3, nb_block_coeff * 2+1); // -2P(inf)
-
-	
-	
-
-	mpn_copyd(ab3_aux, ABpts_one, nb_block_coeff * 2 + 2); // aux : P(1)
-	mpn_neg(ab3_aux, ab3_aux, nb_block_coeff * 2 + 2); // aux : -P(1)
-	if (mpn_add(ab3_aux, ab3_aux, nb_block_coeff * 2 + 2, ABpts_zero, nb_block_coeff * 2)){ // aux : -P(1) + P(0)
-		ab3_aux[nb_block_coeff * 2  + 2] = 1;
-	}
-	mpn_rshift(ab3_aux, ab3_aux, nb_block_coeff * 2 + 2, 1); // aux : (-P(1) + P(0)) / 2
-	
-	//mpn_neg(ab3_aux, ab3_aux, nb_block_coeff * 2 + 2);
-
-	//gmp_printf("%Nx \n\n", ab3_aux,  2 * nb_block_coeff + 2);
-
-
-	if (mpn_add(ab3, ab3_aux, nb_block_coeff * 2 + 2, ab3, nb_block_coeff * 2)){ // -2P(inf) +  (-P(1) + P(0)) / 2
-		ab3_aux[nb_block_coeff * 2 + 2] = 1;
-	}
-
-	mpn_zero(ab3_aux, nb_block_coeff * 2 + 2); // aux : 0
-
-	mpn_copyd(ab3_aux, ABpts_mone, nb_block_coeff * 2 + 2); // aux : P(-1)
-	mpn_neg(ab3_aux, ab3_aux, nb_block_coeff * 2 + 2); // aux : -P(-1)
-
-	mpn_add_n(ab3_aux, ab3_aux, ABpts_two, nb_block_coeff * 2 + 2); // aux : -P(-1) + P(2)
-	
-	mpn_rshift(ab3_aux, ab3_aux, nb_block_coeff * 2 + 2, 1); // aux : (-P(-1) + P(2)) / 2
-	mpn_divexact_by3(ab3_aux, ab3_aux, nb_block_coeff * 2 + 2); // aux : (-P(-1) + P(2)) / 6
-
-	mpn_add_n(ab3, ab3, ab3_aux, nb_block_coeff * 2 + 2); // -2P(inf) + (P(2) - P(-1))/6 + (P(0) - P(1))/2
-*/
 
 
 
@@ -738,9 +772,9 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 	//gmp_printf("AB0 : %Nd \n\n", ab0, 2 * nb_block_coeff);
-	//gmp_printf("AB1 : %Nd \n\n", ab1, 2 * nb_block_coeff + 2);
-	//gmp_printf("AB2 : %Nd \n\n", ab2, 2 * nb_block_coeff + 2);
-	//gmp_printf("AB3 : %Nd \n\n", ab3, 2 * nb_block_coeff + 2);
+	gmp_printf("AB1 : %Nd \n\n", ab1, 2 * nb_block_coeff + 2);
+	gmp_printf("AB2 : %Nd \n\n", ab2, 2 * nb_block_coeff + 2);
+	gmp_printf("AB3 : %Nd \n\n", ab3, 2 * nb_block_coeff + 2);
 	//gmp_printf("AB4 : %Nd \n\n", ab4, 2 * nb_block_coeff);
 
 
@@ -852,9 +886,9 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	mpz_addmul_ui(aux, AB[3], 3);
 	mpz_addmul_ui(aux, AB[4], 5);
 
-	gmp_printf("(1)tv2 : %Zd\n\n", 	aux);
+	//gmp_printf("(1)tv2 : %Zd\n\n", 	aux);
 
-	gmp_printf("(1) v2 : %Zd\n\n", ABpts[two]);
+	//gmp_printf("(1) v2 : %Zd\n\n", ABpts[two]);
 	mpz_set_ui(aux, 0);
 
 
@@ -876,9 +910,9 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	mpz_set(aux, AB[1]);
 	mpz_add(aux, aux, AB[3]);
 
-	gmp_printf("(2)tvm1 : %Zd\n\n", 	aux);
+	//gmp_printf("(2)tvm1 : %Zd\n\n", 	aux);
 
-	gmp_printf("(2) vm1 : %Zd\n\n", ABpts[mone]);
+	//gmp_printf("(2) vm1 : %Zd\n\n", ABpts[mone]);
 	mpz_set_ui(aux, 0);
 
 
@@ -897,9 +931,9 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	mpz_add(aux, aux, AB[3]);
 	mpz_add(aux, aux, AB[4]);
 
-	gmp_printf("(3)tv1 : %Zd\n\n", 	aux);
+	//gmp_printf("(3)tv1 : %Zd\n\n", 	aux);
 
-	gmp_printf("(3) v1 : %Zd\n\n", ABpts[one]);
+	//gmp_printf("(3) v1 : %Zd\n\n", ABpts[one]);
 	mpz_set_ui(aux, 0);
 
 
@@ -920,9 +954,9 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	mpz_set(aux, AB[3]);
 	mpz_addmul_ui(aux, AB[4], 2);
 
-	gmp_printf("(4)tv2 : %Zd\n\n", 	aux);
+	//gmp_printf("(4)tv2 : %Zd\n\n", 	aux);
 
-	gmp_printf("(4) v2 : %Zd\n\n", ABpts[two]);
+	//gmp_printf("(4) v2 : %Zd\n\n", ABpts[two]);
 	mpz_set_ui(aux, 0);
 
 
@@ -941,9 +975,9 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 
 	mpz_set(aux, AB[2]);
 	mpz_add(aux, aux, AB[4]);
-	gmp_printf("(5)tv1 : %Zd\n\n", 	aux);
+	//gmp_printf("(5)tv1 : %Zd\n\n", 	aux);
 
-	gmp_printf("(5) v1 : %Zd\n\n", ABpts[one]);
+	//gmp_printf("(5) v1 : %Zd\n\n", ABpts[one]);
 	mpz_set_ui(aux, 0);
 
 
@@ -957,9 +991,9 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	//test (6)
 
 	mpz_set(aux, AB[3]);
-	gmp_printf("(6)tv2 : %Zd\n\n", 	aux);
+	//gmp_printf("(6)tv2 : %Zd\n\n", 	aux);
 
-	gmp_printf("(6) v2 : %Zd\n\n", ABpts[two]);
+	//gmp_printf("(6) v2 : %Zd\n\n", ABpts[two]);
 	mpz_set_ui(aux, 0);
 
 
@@ -974,9 +1008,9 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	//test (7)
 
 	mpz_set(aux, AB[2]);
-	gmp_printf("(7)tv1 : %Zd\n\n", 	aux);
+	//gmp_printf("(7)tv1 : %Zd\n\n", 	aux);
 
-	gmp_printf("(7) v1 : %Zd\n\n", ABpts[one]);
+	//gmp_printf("(7) v1 : %Zd\n\n", ABpts[one]);
 	mpz_set_ui(aux, 0);
 
 
@@ -989,15 +1023,15 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	mpz_sub(ABpts[mone], ABpts[mone], ABpts[two]);
 
 	mpz_set(aux, AB[1]);
-	gmp_printf("(7)tvm1 : %Zd\n\n", 	aux);
+	//gmp_printf("(8)tvm1 : %Zd\n\n", 	aux);
 
-	gmp_printf("(7) vm1 : %Zd\n\n", ABpts[mone]);
+	//gmp_printf("(8) vm1 : %Zd\n\n", ABpts[mone]);
 	mpz_set_ui(aux, 0);
 
 
 	mpz_clear(aux);
 
-	for (int i = 1; i < 4; ++i)
+	for (int i = 1; i < 2; ++i)
 	{
 		gmp_printf("AB%d : %Zd\n\n", i, AB[i]);
 	}
