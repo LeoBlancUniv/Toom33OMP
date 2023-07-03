@@ -739,7 +739,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	//gmp_printf("AB0 : %Nd \n\n", ab0, 2 * nb_block_coeff);
 	//gmp_printf("AB1 : %Nd \n\n", ab1, 2 * nb_block_coeff + 2);
-	gmp_printf("AB2 : %Nd \n\n", ab2, 2 * nb_block_coeff + 2);
+	//gmp_printf("AB2 : %Nd \n\n", ab2, 2 * nb_block_coeff + 2);
 	//gmp_printf("AB3 : %Nd \n\n", ab3, 2 * nb_block_coeff + 2);
 	//gmp_printf("AB4 : %Nd \n\n", ab4, 2 * nb_block_coeff);
 
@@ -747,6 +747,12 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 }
 
 void toom3(mpz_t a, mpz_t b, mpz_t ab){
+	#define inf 0
+	#define two 1
+	#define mone 2
+	#define one 3
+	#define zero 4
+
 	mpz_t A[3];
 	mpz_t B[3];
 
@@ -817,31 +823,184 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	mpz_t AB[5];
 	calcAB(ABpts, AB);
 
-	for (int i = 2; i < 3; ++i)
+	
+
+	//trying to recreate steps from interpolate :
+
+	/* 
+		(1) v2 <- v2-vm1 < v2+|vm1| : (16 8 4 2 1) - (1 -1 1 -1  1) = (15 9 3  3  0)
+		we need can do v2 <- v2 - |vm1|
+
+		then
+
+		v2 <- v2 / 3 : (15 9 3  3  0)/3 =  (5 3 1 1 0)
+	*/
+
+	mpz_t aux;
+	mpz_init(aux);
+
+	mpz_abs(aux, ABpts[mone]);
+
+	mpz_sub(ABpts[two], ABpts[two], aux);
+
+	mpz_tdiv_q_ui(ABpts[two], ABpts[two], 3);
+
+	//test (1)
+
+	mpz_set(aux, AB[1]);
+	mpz_add(aux, aux, AB[2]);
+	mpz_addmul_ui(aux, AB[3], 3);
+	mpz_addmul_ui(aux, AB[4], 5);
+
+	gmp_printf("(1)tv2 : %Zd\n\n", 	aux);
+
+	gmp_printf("(1) v2 : %Zd\n\n", ABpts[two]);
+	mpz_set_ui(aux, 0);
+
+
+
+
+	/*
+		(2) vm1 <- tm1 := (v1 - vm1) / 2 : [(1 1 1 1 1) - (1 -1 1 -1 1)] / 2 = (0  1 0  1 0)
+		we can do v1 - |vm1|
+	*/
+
+	mpz_abs(aux, ABpts[mone]);
+
+	mpz_sub(ABpts[mone], ABpts[one], aux);
+
+	mpz_tdiv_q_ui(ABpts[mone], ABpts[mone], 2);
+
+	//test (2)
+
+	mpz_set(aux, AB[1]);
+	mpz_add(aux, aux, AB[3]);
+
+	gmp_printf("(2)tvm1 : %Zd\n\n", 	aux);
+
+	gmp_printf("(2) vm1 : %Zd\n\n", ABpts[mone]);
+	mpz_set_ui(aux, 0);
+
+
+
+
+	/*
+		(3) v1 <- t1 := v1 - v0 : (1 1 1 1 1) - (0 0 0 0 1) = (1 1 1 1 0)
+	*/
+
+	mpz_sub(ABpts[one], ABpts[one], ABpts[zero]);
+
+	//test (3)
+
+	mpz_set(aux, AB[1]);
+	mpz_add(aux, aux, AB[2]);
+	mpz_add(aux, aux, AB[3]);
+	mpz_add(aux, aux, AB[4]);
+
+	gmp_printf("(3)tv1 : %Zd\n\n", 	aux);
+
+	gmp_printf("(3) v1 : %Zd\n\n", ABpts[one]);
+	mpz_set_ui(aux, 0);
+
+
+
+
+	/*
+		(4) v2 <- t2 := ((v2-vm1)/3-t1)/2 = (v2-vm1-3*t1)/6 : [(5 3 1 1 0) - (1 1 1 1 0)]/2 = (2 1 0 0 0)
+		(v2 - vm1)/3 is v2 currently
+		t1 is v1 currently
+		so we do v2 <- (v2 - v1) / 2
+	*/
+
+	mpz_sub(ABpts[two], ABpts[two], ABpts[one]);
+	mpz_tdiv_q_ui(ABpts[two], ABpts[two], 2);
+
+	//test (4)
+
+	mpz_set(aux, AB[3]);
+	mpz_addmul_ui(aux, AB[4], 2);
+
+	gmp_printf("(4)tv2 : %Zd\n\n", 	aux);
+
+	gmp_printf("(4) v2 : %Zd\n\n", ABpts[two]);
+	mpz_set_ui(aux, 0);
+
+
+
+
+	/*
+		(5) v1 <- t1-tm1 : (1 1 1 1 0) - (0 1 0 1 0) = (1 0 1 0 0)
+		t1 is v1 currently
+		tm1 is vm1 currently
+		so we do v1 <- v1 - vm1
+	*/
+
+	mpz_sub(ABpts[one], ABpts[one], ABpts[mone]);
+
+	//test (5)
+
+	mpz_set(aux, AB[2]);
+	mpz_add(aux, aux, AB[4]);
+	gmp_printf("(5)tv1 : %Zd\n\n", 	aux);
+
+	gmp_printf("(5) v1 : %Zd\n\n", ABpts[one]);
+	mpz_set_ui(aux, 0);
+
+
+
+	/*
+		(6) v2 <- v2 - 2*vinf : (2 1 0 0 0) - 2*(1 0 0 0 0) = (0 1 0 0 0)
+	*/
+
+	mpz_submul_ui(ABpts[two], ABpts[inf], 2);
+
+	//test (6)
+
+	mpz_set(aux, AB[3]);
+	gmp_printf("(6)tv2 : %Zd\n\n", 	aux);
+
+	gmp_printf("(6) v2 : %Zd\n\n", ABpts[two]);
+	mpz_set_ui(aux, 0);
+
+
+
+
+	/*
+		(7) v1 <- v1 - vinf : (1 0 1 0 0) - (1 0 0 0 0) = (0 0 1 0 0)
+	*/
+
+	mpz_sub(ABpts[one], ABpts[one], ABpts[inf]);
+
+	//test (7)
+
+	mpz_set(aux, AB[2]);
+	gmp_printf("(7)tv1 : %Zd\n\n", 	aux);
+
+	gmp_printf("(7) v1 : %Zd\n\n", ABpts[one]);
+	mpz_set_ui(aux, 0);
+
+
+
+
+	/*
+		(8) vm1 <- vm1-v2 : (0 1 0 1 0) - (0 1 0 0 0) = (0 0 0 1 0)
+	*/
+
+	mpz_sub(ABpts[mone], ABpts[mone], ABpts[two]);
+
+	mpz_set(aux, AB[1]);
+	gmp_printf("(7)tvm1 : %Zd\n\n", 	aux);
+
+	gmp_printf("(7) vm1 : %Zd\n\n", ABpts[mone]);
+	mpz_set_ui(aux, 0);
+
+
+	mpz_clear(aux);
+
+	for (int i = 1; i < 4; ++i)
 	{
 		gmp_printf("AB%d : %Zd\n\n", i, AB[i]);
 	}
-
-	mpz_t tmp, tmp2;
-	mpz_init(tmp);
-	mpz_init(tmp2);
-
-	mpz_set(tmp, ABpts[0]);
-	mpz_mul_ui(tmp, tmp, 2);
-	mpz_neg(tmp, tmp);
-
-//	gmp_printf("%Zx\n\n", tmp);
-
-	mpz_set(tmp2, ABpts[3]);
-	mpz_neg(tmp2, tmp2);
-	mpz_add(tmp2, tmp2, ABpts[4]);
-	mpz_divexact_ui(tmp2, tmp2, 2);
-
-	//gmp_printf("%Zx\n\n", tmp2);
-
-
-	mpz_clear(tmp);
-	mpz_clear(tmp2);
 
 	eval5(AB, powl, ab);
 
