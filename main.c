@@ -351,10 +351,10 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mp_limb_t* Apts_zero = scratch + nb_block_coeff; 		 // nb_block_coeff
 
 	mp_limb_t* Bpts_inf =  scratch + bpts_offset; 							// nb_block_last_coeff
-	mp_limb_t* Bpts_two =  scratch + bpts_offset + nb_block_coeff * 4 + 2; // nb_block_coeff + 1
-	mp_limb_t* Bpts_mone = scratch + bpts_offset + nb_block_coeff * 2; 	// nb_block_coeff + 1
-	mp_limb_t* Bpts_one =  scratch + bpts_offset + nb_block_coeff * 3 + 1; // nb_block_coeff + 1
-	mp_limb_t* Bpts_zero = scratch + bpts_offset + nb_block_coeff; 		// nb_block_coeff
+	mp_limb_t* Bpts_two =  scratch + bpts_offset + nb_block_coeff * 4 + 2;	// nb_block_coeff + 1
+	mp_limb_t* Bpts_mone = scratch + bpts_offset + nb_block_coeff * 2; 		// nb_block_coeff + 1
+	mp_limb_t* Bpts_one =  scratch + bpts_offset + nb_block_coeff * 3 + 1;	// nb_block_coeff + 1
+	mp_limb_t* Bpts_zero = scratch + bpts_offset + nb_block_coeff; 			// nb_block_coeff
 
 	int Apts_mone_sign = 1;
 	int Bpts_mone_sign = 1;
@@ -383,7 +383,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	printf("mpn version\n");
 
 
-	printf("%d %d\n", nb_block_coeff, nb_block_last_coeff);
+	printf("%d %d %d\n",nb_limbs, nb_block_coeff, nb_block_last_coeff);
 
 	//print a and b
 	/*gmp_printf("A : %Nd \n\n", a, nb_limbs);
@@ -646,6 +646,8 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 		v2 <- v2 / 3 : (15 9 3  3  0)/3 =  (5 3 1 1 0)
 	*/
 
+	//should double check if this is right with the handling of sign being separate
+
 	if (ABpts_mone_sign){ //pos
 		mpn_sub_n(ABpts_two, ABpts_two, ABpts_mone, nb_block_coeff * 2 + 2);
 	}
@@ -665,6 +667,8 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 		(2) vm1 <- tm1 := (v1 - vm1) / 2 : [(1 1 1 1 1) - (1 -1 1 -1 1)] / 2 = (0  1 0  1 0)
 		we can do v1 - |vm1|
 	*/
+
+	//should double check if this is right with the handling of sign being separate
 
 	if (ABpts_mone_sign){ //pos
 		mpn_sub_n(ABpts_mone, ABpts_one, ABpts_mone, nb_block_coeff * 2 + 2);
@@ -771,12 +775,13 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 
-	gmp_printf("AB0 : %Nd \n\n", ab0, 2 * nb_block_coeff);
-	gmp_printf("AB1 : %Nd \n\n", ab1, 2 * nb_block_coeff + 2);
-	gmp_printf("AB2 : %Nd \n\n", ab2, 2 * nb_block_coeff + 2);
-	gmp_printf("AB3 : %Nd \n\n", ab3, 2 * nb_block_coeff + 2);
-	gmp_printf("AB4 : %Nd \n\n", ab4, 2 * nb_block_coeff);
+	gmp_printf("AB0 : %Nx \n\n", ab0, 2 * nb_block_coeff);
+	//gmp_printf("AB1 : %Nx \n\n", ab1, 2 * nb_block_coeff + 2);
+	//gmp_printf("AB2 : %Nx \n\n", ab2, 2 * nb_block_coeff + 2);
+	//gmp_printf("AB3 : %Nx \n\n", ab3, 2 * nb_block_coeff + 2);
+	//gmp_printf("AB4 : %Nx \n\n", ab4, 2 * nb_block_coeff);
 
+	gmp_printf("C    : %Nx \n\n", ab0, 2 * nb_limbs);
 
 }
 
@@ -1031,14 +1036,14 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 
 	mpz_clear(aux);
 
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 1; ++i)
 	{
-		gmp_printf("AB%d : %Zd\n\n", i, AB[i]);
+		gmp_printf("AB%d : %Zx\n\n", i, AB[i]);
 	}
 
 	eval5(AB, powl, ab);
 
-	gmp_printf("ab_ : %Zd\n\n", ab);
+	gmp_printf("ab_ : %Zx\n\n", ab);
 
 
 	clearPoly3(A);
@@ -1095,7 +1100,7 @@ int main(int argc, char const *argv[])
 
 	toom3(a, b, ab_);
 
-	gmp_printf("ab : %Zd\n\n", ab);
+	//gmp_printf("ab : %Zd\n\n", ab);
 
 
 	//gmp_printf("ab_ : %Zd\n\n", ab_);
