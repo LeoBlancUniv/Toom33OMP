@@ -356,7 +356,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	
 	
 
-	#define Bpts_inf  b2 									 				//	nb_block_last_coeff
+	#define Bpts_inf  b2 									 				// nb_block_last_coeff
 	#define Bpts_zero b0 													// nb_block_coeff
 	mp_limb_t* Bpts_one =  scratch + bpts_offset;							// nb_block_coeff + 1
 	mp_limb_t* Bpts_mone = scratch + bpts_offset + nb_block_coeff + 1; 		// nb_block_coeff + 1
@@ -369,18 +369,18 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	int Bpts_cmp_skip = 0;
 
 	mp_limb_t* ABpts_inf =  scratch + abpts_offset; 							// nb_block_coeff * 2
-	mp_limb_t* ABpts_two =  scratch + abpts_offset + nb_block_coeff * 4; 		// nb_block_coeff * 2 + 2
-	mp_limb_t* ABpts_mone = scratch + abpts_offset + nb_block_coeff * 6 + 2; 	// nb_block_coeff * 2 + 2/1
-	mp_limb_t* ABpts_one =  scratch + abpts_offset + nb_block_coeff * 8 + 4; 	// nb_block_coeff * 2 + 2/1
 	mp_limb_t* ABpts_zero = scratch + abpts_offset + nb_block_coeff * 2; 		// nb_block_coeff * 2
+	mp_limb_t* ABpts_one =  scratch + abpts_offset + nb_block_coeff * 4; 		// nb_block_coeff * 2 + 1?
+	mp_limb_t* ABpts_mone = scratch + abpts_offset + nb_block_coeff * 6 + 2; 	// nb_block_coeff * 2 + 1?
+	mp_limb_t* ABpts_two =  scratch + abpts_offset + nb_block_coeff * 8 + 4; 	// nb_block_coeff * 2 + 2
 
 	int ABpts_mone_sign;
 
 	mp_limb_t* ab0 = scratch + ab_offset;							// nb_block_coeff * 2
-	mp_limb_t* ab1 = scratch + ab_offset + nb_block_coeff * 8 + 4;	// nb_block_coeff * 2 + 2
-	mp_limb_t* ab2 = scratch + ab_offset + nb_block_coeff * 4; 		// nb_block_coeff * 2 + 2
-	mp_limb_t* ab3 = scratch + ab_offset + nb_block_coeff * 6 + 2;	// nb_block_coeff * 2 + 2
-	mp_limb_t* ab4 = scratch + ab_offset + nb_block_coeff * 2; 		// nb_block_coeff * 2
+	mp_limb_t* ab1 = scratch + ab_offset + nb_block_coeff * 2;		// nb_block_coeff * 2 + 2
+	mp_limb_t* ab2 = scratch + ab_offset + nb_block_coeff * 4 + 2; 	// nb_block_coeff * 2 + 2
+	mp_limb_t* ab3 = scratch + ab_offset + nb_block_coeff * 6 + 4;	// nb_block_coeff * 2 + 2
+	mp_limb_t* ab4 = scratch + ab_offset + nb_block_coeff * 8 + 6; 	// nb_block_coeff * 2
 
 	mp_limb_t* aux_inter_6 = scratch + aux_offset;		// nb_block_coeff * 2
 	//mp_limb_t* ab3_aux = scratch + aux_offset;
@@ -398,10 +398,10 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	//print A0, A1, A2 
 	/*gmp_printf("A0 : %Nd \n\n", a0, nb_block_coeff);
 	gmp_printf("A1 : %Nd \n\n", a1, nb_block_coeff);
-	gmp_printf("A2 : %Nd \n\n", a2, nb_block_last_coeff);*/
+	gmp_printf("A2 : %Nd \n\n", a2, nb_block_last_coeff);
 
 	//print B0, B1, B2
-	/*gmp_printf("B0 : %Nd \n\n", b0, nb_block_coeff);
+	gmp_printf("B0 : %Nd \n\n", b0, nb_block_coeff);
 	gmp_printf("B1 : %Nd \n\n", b1, nb_block_coeff);
 	gmp_printf("B2 : %Nd \n\n", b2, nb_block_last_coeff);*/
 
@@ -489,18 +489,18 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mpn_copyd(Apts_zero, a0, nb_block_coeff);
 
 
-	/*gmp_printf("Apts0 : %Nd \n\n", Apts_inf,  nb_block_last_coeff);
-	gmp_printf("Apts1 : %Nd \n\n", Apts_two,  nb_block_coeff + 1);
+	/*gmp_printf("Apts0 : %Nx \n\n", Apts_inf,  nb_block_last_coeff);
+	gmp_printf("Apts1 : %Nx \n\n", Apts_two,  nb_block_coeff + 1);
 
 	if (Apts_mone_sign){
-		gmp_printf("Apts2 : %Nd \n\n", Apts_mone, nb_block_coeff + 1);
+		gmp_printf("Apts2 : %Nx \n\n", Apts_mone, nb_block_coeff + 1);
 	}
 	else{
-		gmp_printf("Apts2 : -%Nd \n\n", Apts_mone, nb_block_coeff + 1);
+		gmp_printf("Apts2 : -%Nx \n\n", Apts_mone, nb_block_coeff + 1);
 	}
 	
-	gmp_printf("Apts3 : %Nd \n\n", Apts_one,  nb_block_coeff + 1);
-	gmp_printf("Apts4 : %Nd \n\n", Apts_zero, nb_block_coeff);*/
+	gmp_printf("Apts3 : %Nx \n\n", Apts_one,  nb_block_coeff + 1);
+	gmp_printf("Apts4 : %Nx \n\n", Apts_zero, nb_block_coeff);*/
 
 
 
@@ -592,18 +592,18 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 
-	/*gmp_printf("Bpts0 : %Nd \n\n", Bpts_inf,  nb_block_last_coeff);
-	gmp_printf("Bpts1 : %Nd \n\n", Bpts_two,  nb_block_coeff + 1);
+	/*gmp_printf("Bpts0 : %Nx \n\n", Bpts_inf,  nb_block_last_coeff);
+	gmp_printf("Bpts1 : %Nx \n\n", Bpts_two,  nb_block_coeff + 1);
 	
 	if (Bpts_mone_sign){
-		gmp_printf("Bpts2 : %Nd \n\n", Bpts_mone, nb_block_coeff + 1);
+		gmp_printf("Bpts2 : %Nx \n\n", Bpts_mone, nb_block_coeff + 1);
 	}
 	else{
-		gmp_printf("Bpts2 : -%Nd \n\n", Bpts_mone, nb_block_coeff + 1);
+		gmp_printf("Bpts2 : -%Nx \n\n", Bpts_mone, nb_block_coeff + 1);
 	}
 	
-	gmp_printf("Bpts3 : %Nd \n\n", Bpts_one,  nb_block_coeff + 1);
-	gmp_printf("Bpts4 : %Nd \n\n", Bpts_zero, nb_block_coeff);*/
+	gmp_printf("Bpts3 : %Nx \n\n", Bpts_one,  nb_block_coeff + 1);
+	gmp_printf("Bpts4 : %Nx \n\n", Bpts_zero, nb_block_coeff);*/
 
 
 
@@ -611,31 +611,31 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	//ABpts calc
 
-	mpn_mul_n(ABpts_inf, Apts_inf, Bpts_inf, nb_block_coeff);
+	mpn_mul_n(ABpts_inf, Apts_inf, Bpts_inf, nb_block_last_coeff);
 	mpn_mul_n(ABpts_two, Apts_two, Bpts_two, nb_block_coeff + 1);
 
-	mpn_mul_n(ABpts_mone, Apts_mone, Bpts_mone, nb_block_coeff + 1); //nb_block_coeff * 2 + 2/1
+	mpn_mul_n(ABpts_mone, Apts_mone, Bpts_mone, nb_block_coeff + 1); //nb_block_coeff * 2 + 1
 	ABpts_mone_sign = Apts_mone_sign == Bpts_mone_sign;
 
-	mpn_mul_n(ABpts_one, Apts_one, Bpts_one, nb_block_coeff + 1); //nb_block_coeff * 2 + 2/1
+	mpn_mul_n(ABpts_one, Apts_one, Bpts_one, nb_block_coeff + 1); //nb_block_coeff * 2 + 1
 	mpn_mul_n(ABpts_zero, Apts_zero, Bpts_zero, nb_block_coeff);
 
 
 
 
 
-	/*gmp_printf("ABpts0 : %Nd \n\n", ABpts_inf,  2 * nb_block_coeff);
-	gmp_printf("ABpts1 : %Nd \n\n", ABpts_two,  2 * nb_block_coeff + 2);
+	/*gmp_printf("ABpts0 : %Nx \n\n", ABpts_inf,  2 * nb_block_coeff);
+	gmp_printf("ABpts1 : %Nx \n\n", ABpts_two,  2 * nb_block_coeff + 2); // ?
 
 	if (ABpts_mone_sign){
-		gmp_printf("ABpts2 : %Nd \n\n", ABpts_mone, 2 * nb_block_coeff + 2);//+1
+		gmp_printf("ABpts2 : %Nx \n\n", ABpts_mone, 2 * nb_block_coeff + 1);//+1
 	}
 	else{
-		gmp_printf("ABpts2 : -%Nd \n\n", ABpts_mone, 2 * nb_block_coeff + 2);//+1
+		gmp_printf("ABpts2 : -%Nx \n\n", ABpts_mone, 2 * nb_block_coeff + 1);//+1
 	}
 	
-	gmp_printf("ABpts3 : %Nd \n\n", ABpts_one,  2 * nb_block_coeff + 2);//+1
-	gmp_printf("ABpts4 : %Nd \n\n", ABpts_zero, 2 * nb_block_coeff);*/
+	gmp_printf("ABpts3 : %Nx \n\n", ABpts_one,  2 * nb_block_coeff + 1);//+1
+	gmp_printf("ABpts4 : %Nx \n\n", ABpts_zero, 2 * nb_block_coeff);*/
 
 
 
@@ -665,7 +665,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	//test (1)
 
-	//gmp_printf("(1) v2 : %Nd\n\n", ABpts_two, nb_block_coeff * 2 + 2);
+	//gmp_printf("(1) v2 : %Nd\n\n", ABpts_two, nb_block_coeff * 2 + 1);
 
 
 
@@ -787,7 +787,86 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	gmp_printf("AB3 : %Nx \n\n", ab3, 2 * nb_block_coeff + 1);
 	gmp_printf("AB4 : %Nx \n\n", ab4, 2 * nb_block_coeff);
 
-	//gmp_printf("C    : %Nx \n\n", ab0, 2 * nb_limbs);
+	gmp_printf("C    : %Nx \n\n", ab0, 2 * nb_limbs);
+
+	mp_limb_t* ab_ = calloc(2 * nb_limbs, sizeof(mp_limb_t));
+
+	mp_limb_t* powl_ = calloc(2 * nb_limbs, sizeof(mp_limb_t));
+	mp_limb_t* tmp = calloc(2 * nb_limbs, sizeof(mp_limb_t));
+	mp_limb_t* tmp2 = calloc(2 * nb_limbs, sizeof(mp_limb_t));
+
+	//cheating version
+
+	/*
+		ending of ab0 last block is 0010 so we shift ab1 2 times
+		start of ab1 is xx01_0111 which shifted 2 times gives : 
+		
+		shifted out -> 11
+		start is xxxx_0101
+
+		end of new ab0 last block becomes 0010 | 1100 -> 1110
+	*/
+
+	mp_limb_t carry = 0;
+
+	int global_nb_shift_block = 0;
+
+	int size_table[5] = {nb_block_coeff * 2, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2};
+	mp_limb_t* ab_table[5] = {ab0, ab1, ab2, ab3, ab4};
+
+	
+	for (int i = 0; i < 4; i++){
+
+		mp_limb_t* current = ab_table[i];
+		mp_limb_t* next = ab_table[i+1];
+
+		int current_size = size_table[i];
+		int next_size = size_table[i+1];
+
+		int nb_shift_block = global_nb_shift_block;
+		int nb_shift = 0;
+
+		mp_limb_t mask = 1ULL << 63;
+
+
+
+		
+		
+
+		
+
+		while (current[current_size - nb_shift_block - 1] == 0){
+			nb_shift_block++;
+		}
+
+		global_nb_shift_block = nb_shift_block; //update the global shifting offset for next loop
+
+		while (((current[current_size - nb_shift_block - 1] & mask) == 0)){
+			mask >>= 1;
+			nb_shift++;
+		}
+
+		if (nb_shift_block != 0){
+			mpn_rshift(next - nb_shift_block, next - nb_shift_block, next_size + nb_shift_block, nb_shift_block * 64);
+		}
+
+		if (nb_shift != 0){
+			carry = mpn_rshift(next - nb_shift_block, next - nb_shift_block, next_size + nb_shift_block, nb_shift);
+			
+		}
+
+	}
+
+	gmp_printf("C    : %Nx \n\n", ab0, 2 * nb_limbs);
+
+
+	free(tmp2);
+
+	free(tmp);
+
+	free(powl_);
+
+	free(ab_);
 
 }
 
@@ -850,10 +929,10 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	points(B, Bpts);
 
 	for (int i = 0; i < 5; i++){
-		//gmp_printf("Apts%d : %Zd\n\n", i, Apts[i]);
+		//gmp_printf("Apts%d : %Zx\n\n", i, Apts[i]);
 	}
 	for (int i = 0; i < 5; i++){
-		//gmp_printf("Bpts%d : %Zd\n\n", i, Bpts[i]);
+		//gmp_printf("Bpts%d : %Zx\n\n", i, Bpts[i]);
 	}
 
 	mpz_t ABpts[5];
@@ -862,7 +941,7 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 	{
 		mpz_init(ABpts[i]);
 		mpz_mul(ABpts[i], Apts[i], Bpts[i]); //this should be changed to kara once it's done
-		//gmp_printf("ABpts%d : %Zd\n\n", i, ABpts[i]);
+		//gmp_printf("ABpts%d : %Zx\n\n", i, ABpts[i]);
 	}
 
 	mpz_t AB[5];
@@ -1044,12 +1123,12 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 
 	for (int i = 0; i < 5; ++i)
 	{
-		gmp_printf("AB%d : %Zx\n\n", i, AB[i]);
+		//gmp_printf("AB%d : %Zx\n\n", i, AB[i]);
 	}
 
 	eval5(AB, powl, ab);
 
-	//gmp_printf("ab_ %d : %Zx\n\n",ab->_mp_size, ab);
+	gmp_printf("ab_ %d : %Zx\n\n",ab->_mp_size, ab);
 
 
 	clearPoly3(A);
@@ -1092,7 +1171,7 @@ int main(int argc, char const *argv[])
 	toom3_block_size = 86*32; //43*64
 
 	mpz_ui_pow_ui(powl, 2, toom3_block_size);
-
+	gmp_printf("%Zx\n\n", powl);
 
 	mpz_t ab, ab_;
 
