@@ -787,43 +787,81 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	gmp_printf("AB3 : %Nx \n\n", ab3, 2 * nb_block_coeff + 1);
 	gmp_printf("AB4 : %Nx \n\n", ab4, 2 * nb_block_coeff);
 
-	gmp_printf("C    : %Nx \n\n", ab0, 2 * nb_limbs);
+	gmp_printf("C    : %Nx \n\n", ab0, nb_block_coeff * 10 + 4);
 
-	mp_limb_t* ab_ = calloc(2 * nb_limbs, sizeof(mp_limb_t));
+	mp_limb_t* ab_ = calloc(nb_block_coeff * 10 + 4, sizeof(mp_limb_t));
 
-	mp_limb_t* powl_ = calloc(2 * nb_limbs, sizeof(mp_limb_t));
-	mp_limb_t* tmp = calloc(2 * nb_limbs, sizeof(mp_limb_t));
-	mp_limb_t* tmp2 = calloc(2 * nb_limbs, sizeof(mp_limb_t));
+	mp_limb_t* ret = calloc(nb_block_coeff * 10 + 4, sizeof(mp_limb_t));
+	
+	mp_limb_t* acc = calloc(nb_block_coeff * 10 + 4, sizeof(mp_limb_t));
+
+	
+
+	int size_table[5] = {nb_block_coeff * 2, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2};
+	mp_limb_t* ab_table[5] = {ab0, ab1, ab2, ab3, ab4};
+
+	#define current ab_table[i]
+	#define current_size size_table[i]
+
+	for (int i = 0; i < 5; i++){
+
+		mpn_zero(acc, nb_block_coeff * 10 + 4);
+		
+		mpn_copyd(acc, current, current_size);
+
+		
+
+		for (int j = 0; j < i; j++){
+			for (int k = 0; k < 43; k++){
+				mpn_lshift(acc, acc, nb_block_coeff * 10 + 4, 63);
+				mpn_lshift(acc, acc, nb_block_coeff * 10 + 4, 1);
+
+			}
+		}
+
+
+		mpn_add_n(ret, ret, acc, nb_block_coeff * 10 + 4);
+
+					
+
+	}
+
+gmp_printf("C : %Nx \n\n", 	ret, nb_block_coeff * 10 + 4);
+
+	free(acc);
+	free(ret);
+	free(ab_);
 
 	//cheating version
 
 	/*
-		ending of ab0 last block is 0010 so we shift ab1 2 times
-		start of ab1 is xx01_0111 which shifted 2 times gives : 
 		
-		shifted out -> 11
-		start is xxxx_0101
-
-		end of new ab0 last block becomes 0010 | 1100 -> 1110
 	*/
 
-	mp_limb_t carry = 0;
+	//mpn_zero(ab2, nb_block_coeff * 2 + 1);
+	//mpn_zero(ab3, nb_block_coeff * 2 + 1);
+	//mpn_zero(ab4, nb_block_coeff * 2);
+
+
+
+
+	/*mp_limb_t carry = 0;
 
 	int global_nb_shift_block = 0;
 
 	int size_table[5] = {nb_block_coeff * 2, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2};
 	mp_limb_t* ab_table[5] = {ab0, ab1, ab2, ab3, ab4};
 
+	#define current ab_table[i]
+	#define next ab_table[i+1]
 	
 	for (int i = 0; i < 4; i++){
 
-		mp_limb_t* current = ab_table[i];
-		mp_limb_t* next = ab_table[i+1];
 
 		int current_size = size_table[i];
 		int next_size = size_table[i+1];
 
-		int nb_shift_block = global_nb_shift_block;
+		int nb_shift_block = 0;
 		int nb_shift = 0;
 
 		mp_limb_t mask = 1ULL << 63;
@@ -839,34 +877,57 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 			nb_shift_block++;
 		}
 
-		global_nb_shift_block = nb_shift_block; //update the global shifting offset for next loop
 
 		while (((current[current_size - nb_shift_block - 1] & mask) == 0)){
 			mask >>= 1;
 			nb_shift++;
 		}
 
-		if (nb_shift_block != 0){
-			mpn_rshift(next - nb_shift_block, next - nb_shift_block, next_size + nb_shift_block, nb_shift_block * 64);
+		
+		
+
+
+		int shift_block_offset = global_nb_shift_block + nb_shift_block;
+
+		printf("%d %d %d %d\n", global_nb_shift_block, nb_shift_block, shift_block_offset, nb_shift);
+
+
+
+		if (shift_block_offset){
+			next -= shift_block_offset; 
+			//next is now on the first avaiable block after current
+
+			mpn_rshift(next, next, next_size + shift_block_offset, shift_block_offset * 64);
+			//shifts all of next blocks to align them with current
+
 		}
 
-		if (nb_shift != 0){
-			carry = mpn_rshift(next - nb_shift_block, next - nb_shift_block, next_size + nb_shift_block, nb_shift);
-			
+		if (nb_shift){
+
+			gmp_printf("%p %Nx\n", next, next, 1);
+
+			carry = mpn_rshift(next, next, next_size, nb_shift);
+
+
+
+			current[current_size - 1] |= carry;
+			//shift the nb_shift bits out of next into current to make them a continuous block
+
+			next -= 1; // next starts one block earlier, merged with current's end block
+
 		}
+
+		global_nb_shift_block += nb_shift_block; //update global shift for next loop
+		
+
+		printf("\n");
 
 	}
+	printf("%d\n", nb_block_coeff * 10 + 4);
+	gmp_printf("C       : %Nx \n\n", ab0, 10 * nb_block_coeff + 4);*/
 
-	gmp_printf("C    : %Nx \n\n", ab0, 2 * nb_limbs);
 
-
-	free(tmp2);
-
-	free(tmp);
-
-	free(powl_);
-
-	free(ab_);
+	
 
 }
 
@@ -1128,7 +1189,7 @@ void toom3(mpz_t a, mpz_t b, mpz_t ab){
 
 	eval5(AB, powl, ab);
 
-	gmp_printf("ab_ %d : %Zx\n\n",ab->_mp_size, ab);
+	gmp_printf("C : %Zx\n\n", ab);
 
 
 	clearPoly3(A);
