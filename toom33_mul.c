@@ -289,11 +289,11 @@ mpn_toom33_mul (mp_ptr pp,
       {1}{2}{3}{4}{5} no
       
   */
-  omp_set_num_threads(2);
+  /*omp_set_num_threads(2);
   #pragma omp parallel sections
   {
     #pragma omp section
-    {
+    {*/
       /* vm1, 2n+1 limbs */
       #ifdef SMALLER_RECURSION
         
@@ -394,8 +394,8 @@ mpn_toom33_mul (mp_ptr pp,
       TOOM33_MUL_N_REC (v0, input_a, input_b, nb_block_coeff, scratch_out); /* v0, 2n limbs */
 
       //-------------------------
-    }
-  }
+    /*}
+  }*/
   
 
   mpn_toom_interpolate_5pts (pp, v2, vm1, nb_block_coeff, s + t, vm1_neg, vinf0);
