@@ -9,18 +9,29 @@
 #include "toom33_mul_mpn.h"
 
 void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_t* scratch, int v){
+	/*
+		gmp inspired toom cook 33 alg for multiplication
 	
-	int nb_block_coeff = (nb_limbs + 2) /  3;
-	int nb_block_last_coeff = nb_limbs - 2 * nb_block_coeff;
 
+		the scratch variable will hold all the intermediate values requiered 
+	*/
+	
+	int nb_block_coeff = (nb_limbs + 2) /  3;	//nb_block_coeff is the base unit of size mesurement
+	int nb_block_last_coeff = nb_limbs - 2 * nb_block_coeff; //
+
+	//for object of size 8192bits (nb_limbs = 128), they should be respectively 43 and 42
+
+	//splitting of a without any big calculation
 	#define a0 a
 	#define a1 a + nb_block_coeff
 	#define a2 a + 2*nb_block_coeff
 
+	//splitting of b without any big calculation
 	#define b0 b
 	#define b1 b + nb_block_coeff
 	#define b2 b + 2*nb_block_coeff
 
+	//offset used in scratch 
 	#define bpts_offset  				nb_block_coeff * 3 + 3
 	#define abpts_offset bpts_offset  + nb_block_coeff * 3 + 3
 	#define ab_offset 	 abpts_offset + 10*nb_block_coeff + 6
@@ -28,44 +39,123 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 
+	/*
+		data pointer to all of the points calculation of A
+	*/
 
-	#define Apts_inf a2 									 //	nb_block_last_coeff
+	//A(inf) = last coeff of a, A(0) = const term of a 
+	#define Apts_inf  a2 									 //	nb_block_last_coeff
 	#define Apts_zero a0 									 // nb_block_coeff
+							 
 	mp_limb_t* Apts_one =  scratch; 						 // nb_block_coeff + 1
 	mp_limb_t* Apts_mone = scratch + nb_block_coeff + 1; 	 // nb_block_coeff + 1
 	mp_limb_t* Apts_two =  scratch + nb_block_coeff * 2 + 2; // nb_block_coeff + 1
 	
-	
-	
 
+	//version of above using distinct memory spaces
+
+	/*mp_limb_t* Apts_inf =  calloc(nb_block_last_coeff, sizeof(mp_limb_t));// nb_block_last_coeff
+	mp_limb_t* Apts_zero = calloc(nb_block_coeff, sizeof(mp_limb_t));	  // nb_block_coeff
+
+	mpn_copyd(Apts_inf, a2, nb_block_last_coeff);
+	mpn_copyd(Apts_zero, a0, nb_block_coeff);
+
+	mp_limb_t* Apts_one =  calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
+	mp_limb_t* Apts_mone = calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
+	mp_limb_t* Apts_two =  calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1*/
+
+
+	/*
+		data pointer to all of the points calculation of B
+	*/
+
+	//B(inf) = last coeff of b, B(0) = const term of b 	
 	#define Bpts_inf  b2 									 				// nb_block_last_coeff
 	#define Bpts_zero b0 													// nb_block_coeff
+	
 	mp_limb_t* Bpts_one =  scratch + bpts_offset;							// nb_block_coeff + 1
 	mp_limb_t* Bpts_mone = scratch + bpts_offset + nb_block_coeff + 1; 		// nb_block_coeff + 1
 	mp_limb_t* Bpts_two =  scratch + bpts_offset + nb_block_coeff * 2 + 2;	// nb_block_coeff + 1
+	
 
+	//version of above using distinct memory spaces
+
+	/*mp_limb_t* Bpts_inf =  calloc(nb_block_last_coeff, sizeof(mp_limb_t));// nb_block_last_coeff
+	mp_limb_t* Bpts_zero = calloc(nb_block_coeff, sizeof(mp_limb_t));	  // nb_block_coeff
+
+	mpn_copyd(Bpts_inf, b2, nb_block_last_coeff);
+	mpn_copyd(Bpts_zero, b0, nb_block_coeff);
+
+	mp_limb_t* Bpts_one =  calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
+	mp_limb_t* Bpts_mone = calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
+	mp_limb_t* Bpts_two =  calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1*/
+
+
+	//the sign of Apts_mone and Bpts_mone are tracked on the side to only have to hold absolute value
 	int Apts_mone_sign = 1;
 	int Bpts_mone_sign = 1;
 
+	//flag used to skip comparaison in cases where they cannot be done
 	int Apts_cmp_skip = 0;
 	int Bpts_cmp_skip = 0;
 
+
+	/*
+		data pointer to the points calculations of AB
+	*/
+
+	
 	mp_limb_t* ABpts_inf =  scratch + abpts_offset; 							// nb_block_coeff * 2
 	mp_limb_t* ABpts_zero = scratch + abpts_offset + nb_block_coeff * 2; 		// nb_block_coeff * 2
 	mp_limb_t* ABpts_one =  scratch + abpts_offset + nb_block_coeff * 4; 		// nb_block_coeff * 2 + 1?
 	mp_limb_t* ABpts_mone = scratch + abpts_offset + nb_block_coeff * 6 + 2; 	// nb_block_coeff * 2 + 1?
 	mp_limb_t* ABpts_two =  scratch + abpts_offset + nb_block_coeff * 8 + 4; 	// nb_block_coeff * 2 + 2
+	
 
+	//version of above using distinct memory spaces
+	/*
+	mp_limb_t* ABpts_inf  = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2
+	mp_limb_t* ABpts_zero = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2
+	mp_limb_t* ABpts_one  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 1?
+	mp_limb_t* ABpts_mone = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 1?
+	mp_limb_t* ABpts_two  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 2?
+	*/
+
+	//the sign of ABpts_mone and Bpts_mone are tracked on the side to only have to hold absolute value
 	int ABpts_mone_sign;
 
+	/*
+		data pointer to the value of the coefficient of AB
+	*/
+
+	
 	mp_limb_t* ab0 = scratch + ab_offset;							// nb_block_coeff * 2
 	mp_limb_t* ab1 = scratch + ab_offset + nb_block_coeff * 2;		// nb_block_coeff * 2 + 2
 	mp_limb_t* ab2 = scratch + ab_offset + nb_block_coeff * 4 + 2; 	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab3 = scratch + ab_offset + nb_block_coeff * 6 + 4;	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab4 = scratch + ab_offset + nb_block_coeff * 8 + 6; 	// nb_block_coeff * 2
+	
+	//version of above using distinct memory spaces
+	/*
+	mp_limb_t* ab0  = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2
+	mp_limb_t* ab1  = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2 + 2
+	mp_limb_t* ab2  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 2
+	mp_limb_t* ab3  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 2
+	mp_limb_t* ab4  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2
+	*/
+
+
+	/*
+		auxiliary variable used in some calculation
+	*/
 
 	mp_limb_t* aux_inter_6 = scratch + aux_offset;		// nb_block_coeff * 2
-	//mp_limb_t* ab3_aux = scratch + aux_offset;
+	
+
+	//version of above using distinct memory spaces
+	/*
+	mp_limb_t* aux_inter_6 = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2
+	*/
 
 
 	//printf("mpn version\n");
@@ -99,6 +189,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	//Apts_inf <- a2 :
 
 	mpn_copyd(Apts_inf, a2, nb_block_last_coeff);
+	//should only be usefull if using the non scratch version, or you are just copying a2 into itself
 
 
 
@@ -169,6 +260,8 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	//Apts_zero <- a0 :
 
 	mpn_copyd(Apts_zero, a0, nb_block_coeff);
+	//should only be usefull if using the non scratch version, or you are just copying a0 into itself
+
 
 
 	/*gmp_printf("Apts0 : %Nx \n\n", Apts_inf,  nb_block_last_coeff);
@@ -199,6 +292,8 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	//Bpts_inf <- b2 :
 
 	mpn_copyd(Bpts_inf, b2, nb_block_last_coeff);
+	//should only be usefull if using the non scratch version, or you are just copying b2 into itself
+
 
 
 
@@ -269,6 +364,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	//Bpts_zero <- b0 :
 
 	mpn_copyd(Bpts_zero, b0, nb_block_coeff);
+	//should only be usefull if using the non scratch version, or you are just copying b0 into itself
 
 
 
@@ -292,10 +388,15 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 	//ABpts calc
-	//omp_set_num_threads(1);
-  	/*#pragma omp parallel sections num_threads(5)
+
+
+
+	//parallel version using OpenMP
+	/*omp_set_num_threads(5);
+  	#pragma omp parallel sections firstprivate(a, b, ABpts_inf, ABpts_two, ABpts_mone, ABpts_one, ABpts_zero, Apts_one, Apts_mone, Apts_two, Apts_inf, Apts_zero, Bpts_one, Bpts_mone, Bpts_two, Bpts_inf, Bpts_zero, nb_block_coeff, nb_block_last_coeff)
   	{
-    	#pragma omp section
+  		
+		#pragma omp section
     	{
 			mpn_mul_n(ABpts_inf, Apts_inf, Bpts_inf, nb_block_last_coeff);
 		}
@@ -318,9 +419,11 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
     		mpn_mul_n(ABpts_zero, Apts_zero, Bpts_zero, nb_block_coeff);
 
     	}
+  		
+    	
     }*/
 
-
+	//sequential version, the calls to mpn_mul should call karatsuba (toom22) which should itelf call basecase
 	mpn_mul_n(ABpts_inf, Apts_inf, Bpts_inf, nb_block_last_coeff);
 
 	mpn_mul_n(ABpts_two, Apts_two, Bpts_two, nb_block_coeff + 1);
@@ -352,7 +455,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 
-	// trying to recreate steps from interpolate (mpn version):
+	// trying to recreate steps from interpolate5 (mpn version):
 
 	/* 
 		(1) v2 <- v2-vm1 < v2+|vm1| : (16 8 4 2 1) - (1 -1 1 -1  1) = (15 9 3  3  0)
@@ -373,6 +476,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	}
 
 	mpn_divexact_by3 (ABpts_two, ABpts_two, nb_block_coeff * 2 + 1);
+	//since 15, 9, and 3 are all multiple of 3, this operation doesn't loose any information
 
 	//test (1)
 
@@ -451,6 +555,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mpn_lshift(aux_inter_6, aux_inter_6, nb_block_coeff * 2, 1);
 
 	mpn_sub(ab3, ABpts_two, nb_block_coeff * 2 + 1, aux_inter_6, nb_block_coeff * 2);
+	//result is (0 1 0 0 0) so we can directly put it in ab3
 
 	//gmp_printf("(6) v2 : %Nd\n\n", ABpts_two, nb_block_coeff * 2 + 2);
 
@@ -462,6 +567,8 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	*/
 
 	mpn_sub(ab2, ABpts_one, nb_block_coeff * 2 + 1, ABpts_inf, nb_block_coeff * 2);
+	//result is (0 0 1 0 0) so we can directly put it in ab2
+
 
 	//gmp_printf("(7) v1 : %Nd\n\n", ABpts_one, nb_block_coeff * 2 + 2);
 
@@ -473,6 +580,8 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	*/
 
 	mpn_sub_n(ab1, ABpts_mone, ab3, nb_block_coeff * 2 + 1);
+	//result is (0 0 0 1 0) so we can directly put it in ab1
+
 
 	//gmp_printf("(8) vm1 : %Nd\n\n", ABpts_mone, nb_block_coeff * 2 + 2);
 
@@ -481,10 +590,6 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	//AB0 <- P(0)
 	mpn_copyd(ab0, ABpts_zero, nb_block_coeff * 2);
-
-
-	
-
 
 
 	//AB4 <- P(inf)
@@ -500,6 +605,9 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	gmp_printf("C    : %Nx \n\n", ab0, nb_block_coeff * 10 + 4);*/
 
+	/*
+		mpz version (eval5)
+	*/
 	
 	mp_limb_t* acc = calloc(nb_block_coeff * 10 + 4, sizeof(mp_limb_t));
 
@@ -529,8 +637,6 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 		mpn_add_n(ab, ab, acc, nb_block_coeff * 10 + 4);
-
-					
 
 	}
 
@@ -637,6 +743,27 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	printf("%d\n", nb_block_coeff * 10 + 4);
 	gmp_printf("C       : %Nx \n\n", ab0, 10 * nb_block_coeff + 4);*/
 
+	free(Apts_one);
+	free(Apts_mone);
+	free(Apts_two);
+
+	free(Bpts_one);
+	free(Bpts_mone);
+	free(Bpts_two);
+
+	free(ABpts_inf);
+	free(ABpts_zero);
+	free(ABpts_one);
+	free(ABpts_mone);
+	free(ABpts_two);
+
+	free(ab0);
+	free(ab1);
+	free(ab2);
+	free(ab3);
+	free(ab4);
+
+	free(aux_inter_6);
 
 	
 
