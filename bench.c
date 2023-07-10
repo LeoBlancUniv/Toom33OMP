@@ -9,7 +9,7 @@
 #include <gmp.h>
 #include "gmp_stuff.c"
 
-//#include "toom33_mul.c"
+#include "toom33_mul.c"
 #include "toom33_mul_mpn.h"
 
 #define NTEST 501
@@ -167,9 +167,9 @@ static inline void gmp_toom3_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 
 	scratch = scratch2;
 
-	//mpn_toom33_mul(c_limbs, a_limbs, nb_limbs, b_limbs, nb_limbs, scratch);
+	mpn_toom33_mul(c_limbs, a_limbs, nb_limbs, b_limbs, nb_limbs, scratch);
 
-	mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+	/*mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
 
 		mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
 
@@ -199,7 +199,7 @@ static inline void gmp_toom3_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 
 		
 
-		free(x);
+		free(x);*/
 
 
 
@@ -220,6 +220,7 @@ static inline void gmp_lowlevel_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t r, mp_limb_t *c_limbs, mp_limb_t *q_limbs, uint8_t W, void (*gmp_wrapper)(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs))
 {
+
 	uint64_t timermin, timermax, meanTimermin = 0, medianTimer = 0,
 	meanTimermax = 0, t1, t2, diff_t, *statTimer;
 	uint64_t *cycles = (uint64_t *)calloc(NTEST,sizeof(uint64_t));
@@ -239,6 +240,9 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 		mpn_zero(c_limbs, 2 * nb_limbs);
 
 	}
+
+		
+
 	
 	for(int i=0;i<NSAMPLES;i++)
 	{
@@ -254,10 +258,12 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 		memset(cycles,0,NTEST*sizeof(uint64_t));
 		for(int j=0;j<NTEST;j++)
 		{
+			//printf("j : %d\n", j);
 			t1 = cpucyclesStart();
 			// We call the function W times to get an accurate measurement.
-			for(int soak=0; soak < W; soak++)
+			for(int soak=0; soak < W; soak++){
 				gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs);
+			}
 			t2 = cpucyclesStop();
 
 			mpn_zero(scratch2, 10000);
@@ -278,6 +284,7 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 		statTimer = quartiles(cycles,NTEST);
 		medianTimer += statTimer[1];
 		free(statTimer);
+
 	}
 	free(cycles);
 	return medianTimer/NSAMPLES/W; // We divide by W since we measured W calls.
