@@ -793,3 +793,65 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	
 
 }
+
+void test(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
+
+
+
+	mp_limb_t accs[4][128]; // will hold intermediate values 
+
+	int nb_limbs_half = nb_limbs / 2;
+
+	mp_limb_t* a_lo = a; 				    // nb_limbs_half
+	mp_limb_t* a_hi = a + nb_limbs_half; 	// nb_limbs_half  
+
+	mp_limb_t* b_lo = b; 				    // nb_limbs_half
+	mp_limb_t* b_hi = b + nb_limbs_half; 	// nb_limbs_half
+
+	omp_set_num_threads(4);
+	#pragma omp parallel sections
+  	{
+  		
+		#pragma omp section
+    	{
+    		//accs[0] = a_lo * b_lo
+			mpn_mul_n(accs[0], a_lo, b_lo, nb_limbs_half);
+    	}
+    	#pragma omp section
+    	{
+			//accs[1] = a_hi * b_lo
+			mpn_mul_n(accs[1], a_hi, b_lo, nb_limbs_half);
+    	}
+    	#pragma omp section
+    	{
+    		//accs[2] = a_lo * b_hi
+			mpn_mul_n(accs[2], a_lo, b_hi, nb_limbs_half);
+    	}
+    	#pragma omp section
+    	{
+    		//accs[3] = a_hi * b_hi
+			mpn_mul_n(accs[3], a_hi, b_hi, nb_limbs_half);
+    	}
+
+    }
+
+    /*
+	//accs[0] = a_lo * b_lo
+	mpn_mul_n(accs[0], a_lo, b_lo, nb_limbs_half);
+	
+	//accs[1] = a_hi * b_lo
+	mpn_mul_n(accs[1], a_hi, b_lo, nb_limbs_half);
+
+	//accs[2] = a_lo * b_hi
+	mpn_mul_n(accs[2], a_lo, b_hi, nb_limbs_half);
+
+	//accs[3] = a_hi * b_hi
+	mpn_mul_n(accs[3], a_hi, b_hi, nb_limbs_half);
+	*/
+	mpn_copyd(ab, accs[0], nb_limbs);
+	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[1], nb_limbs);
+	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[2], nb_limbs);
+	mpn_add_n(ab + nb_limbs, ab, accs[3], nb_limbs);
+
+
+}
