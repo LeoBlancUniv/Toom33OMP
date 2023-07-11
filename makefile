@@ -5,7 +5,7 @@ LINKER = -lgmp
 
 all:main.exe bench.exe
 
-bench.exe:bench.o toom33_mul_mpn.o
+bench.exe:bench.o mul_mpn.o
 	$(CC) $^ $(FLAG) -o $@ $(LINKER)
 
 main.exe:main.o
@@ -17,5 +17,5 @@ bench.o:bench.c
 main.o:main.c
 	$(CC) $< $(FLAG) -c -o $@ $(LINKER)
 
-toom33_mul_mpn.o:toom33_mul_mpn.c
+mul_mpn.o:mul_mpn.c
 	$(CC) $< $(FLAG) -c -o $@ $(LINKER)

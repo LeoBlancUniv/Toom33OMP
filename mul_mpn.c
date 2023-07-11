@@ -6,7 +6,7 @@
 
 #include <gmp.h>
 
-#include "toom33_mul_mpn.h"
+#include "mul_mpn.h"
 
 void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_t* scratch, int v){
 	/*

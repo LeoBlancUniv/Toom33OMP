@@ -10,7 +10,7 @@
 #include "gmp_stuff.c"
 
 #include "toom33_mul.c"
-#include "toom33_mul_mpn.h"
+#include "mul_mpn.h"
 
 #define NTEST 501
 #define NSAMPLES 1001
