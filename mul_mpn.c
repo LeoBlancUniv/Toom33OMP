@@ -46,17 +46,18 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	*/
 
 	//A(inf) = last coeff of a, A(0) = const term of a 
-	/*
+	
 	#define Apts_inf  a2 									 //	nb_block_last_coeff
 	#define Apts_zero a0 									 // nb_block_coeff
 							 
 	mp_limb_t* Apts_one =  scratch; 						 // nb_block_coeff + 1
 	mp_limb_t* Apts_mone = scratch + nb_block_coeff + 1; 	 // nb_block_coeff + 1
 	mp_limb_t* Apts_two =  scratch + nb_block_coeff * 2 + 2; // nb_block_coeff + 1
-	*/
+	
 
 	//version of above using distinct memory spaces
 
+	/*
 	mp_limb_t* Apts_inf =  calloc(nb_block_last_coeff, sizeof(mp_limb_t));// nb_block_last_coeff
 	mp_limb_t* Apts_zero = calloc(nb_block_coeff, sizeof(mp_limb_t));	  // nb_block_coeff
 
@@ -66,24 +67,24 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mp_limb_t* Apts_one =  calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
 	mp_limb_t* Apts_mone = calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
 	mp_limb_t* Apts_two =  calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
-
+	*/
 
 	/*
 		data pointer to all of the points calculation of B
 	*/
 
 	//B(inf) = last coeff of b, B(0) = const term of b 
-	/*
+	
 	#define Bpts_inf  b2 									 				// nb_block_last_coeff
 	#define Bpts_zero b0 													// nb_block_coeff
 	
 	mp_limb_t* Bpts_one =  scratch + bpts_offset;							// nb_block_coeff + 1
 	mp_limb_t* Bpts_mone = scratch + bpts_offset + nb_block_coeff + 1; 		// nb_block_coeff + 1
 	mp_limb_t* Bpts_two =  scratch + bpts_offset + nb_block_coeff * 2 + 2;	// nb_block_coeff + 1
-	*/
+	
 
 	//version of above using distinct memory spaces
-
+	/*
 	mp_limb_t* Bpts_inf =  calloc(nb_block_last_coeff, sizeof(mp_limb_t));// nb_block_last_coeff
 	mp_limb_t* Bpts_zero = calloc(nb_block_coeff, sizeof(mp_limb_t));	  // nb_block_coeff
 
@@ -93,7 +94,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	mp_limb_t* Bpts_one =  calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
 	mp_limb_t* Bpts_mone = calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
 	mp_limb_t* Bpts_two =  calloc(nb_block_coeff + 1, sizeof(mp_limb_t)); // nb_block_coeff + 1
-
+	*/
 
 	//the sign of Apts_mone and Bpts_mone are tracked on the side to only have to hold absolute value
 	int Apts_mone_sign = 1;
@@ -108,22 +109,22 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 		data pointer to the points calculations of AB
 	*/
 
-	/*
+	
 	mp_limb_t* ABpts_inf =  scratch + abpts_offset; 							// nb_block_coeff * 2
 	mp_limb_t* ABpts_zero = scratch + abpts_offset + nb_block_coeff * 2; 		// nb_block_coeff * 2
 	mp_limb_t* ABpts_one =  scratch + abpts_offset + nb_block_coeff * 4; 		// nb_block_coeff * 2 + 1?
 	mp_limb_t* ABpts_mone = scratch + abpts_offset + nb_block_coeff * 6 + 2; 	// nb_block_coeff * 2 + 1?
 	mp_limb_t* ABpts_two =  scratch + abpts_offset + nb_block_coeff * 8 + 4; 	// nb_block_coeff * 2 + 2
-	*/
+	
 
 	//version of above using distinct memory spaces
-	
+	/*
 	mp_limb_t* ABpts_inf  = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2
 	mp_limb_t* ABpts_zero = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2
 	mp_limb_t* ABpts_one  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 1?
 	mp_limb_t* ABpts_mone = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 1?
 	mp_limb_t* ABpts_two  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 2?
-	
+	*/
 
 	//the sign of ABpts_mone and Bpts_mone are tracked on the side to only have to hold absolute value
 	int ABpts_mone_sign;
@@ -132,35 +133,35 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 		data pointer to the value of the coefficient of AB
 	*/
 
-	/*
+	
 	mp_limb_t* ab0 = scratch + ab_offset;							// nb_block_coeff * 2
 	mp_limb_t* ab1 = scratch + ab_offset + nb_block_coeff * 2;		// nb_block_coeff * 2 + 2
 	mp_limb_t* ab2 = scratch + ab_offset + nb_block_coeff * 4 + 2; 	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab3 = scratch + ab_offset + nb_block_coeff * 6 + 4;	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab4 = scratch + ab_offset + nb_block_coeff * 8 + 6; 	// nb_block_coeff * 2
-	*/
+	
 
 	//version of above using distinct memory spaces
-	
+	/*
 	mp_limb_t* ab0  = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2
 	mp_limb_t* ab1  = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2 + 2
 	mp_limb_t* ab2  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab3  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2 + 2
 	mp_limb_t* ab4  = calloc(nb_block_coeff * 2 + 2, sizeof(mp_limb_t));	// nb_block_coeff * 2
-	
+	*/
 
 
 	/*
 		auxiliary variable used in some calculation
 	*/
-	/*
+	
 	mp_limb_t* aux_inter_6 = scratch + aux_offset;		// nb_block_coeff * 2
-	*/
+	
 
 	//version of above using distinct memory spaces
-	
+	/*
 	mp_limb_t* aux_inter_6 = calloc(nb_block_coeff * 2, sizeof(mp_limb_t));		// nb_block_coeff * 2
-	
+	*/
 
 	//printf("done pointer setting\n");
 
@@ -375,7 +376,6 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 
-
 	/*gmp_printf("Bpts0 : %Nx \n\n", Bpts_inf,  nb_block_last_coeff);
 	gmp_printf("Bpts1 : %Nx \n\n", Bpts_two,  nb_block_coeff + 1);
 	
@@ -395,10 +395,25 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	//ABpts calc
 
+	//parallel version using OpenMP with parallel for
 
+	mp_limb_t* Apts_table[5] = {Apts_inf, Apts_two, Apts_mone, Apts_one, Apts_zero};
+	mp_limb_t* Bpts_table[5] = {Bpts_inf, Bpts_two, Bpts_mone, Bpts_one, Bpts_zero};
+	mp_limb_t* ABpts_table[5] = {ABpts_inf, ABpts_two, ABpts_mone, ABpts_one, ABpts_zero};
+
+	int size_table[5] = {nb_block_last_coeff, nb_block_coeff + 1, nb_block_coeff +1, nb_block_coeff + 1, nb_block_coeff};
+
+	omp_set_num_threads(5);
+	#pragma omp parallel for firstprivate(scratch, nb_block_coeff, nb_block_last_coeff, Apts_table, Bpts_table, ABpts_table, size_table)
+	for (int i = 0; i < 5; i++){
+		mpn_mul_n(ABpts_table[i], Apts_table[i], Bpts_table[i], size_table[i]);
+	}
+
+	ABpts_mone_sign = Apts_mone_sign == Bpts_mone_sign;
 
 	//parallel version using OpenMP
-	omp_set_num_threads(5);
+	
+	/*omp_set_num_threads(5);
   	//#pragma omp parallel sections firstprivate(a, b, ABpts_inf, ABpts_two, ABpts_mone, ABpts_one, ABpts_zero, Apts_one, Apts_mone, Apts_two, Apts_inf, Apts_zero, Bpts_one, Bpts_mone, Bpts_two, Bpts_inf, Bpts_zero, nb_block_coeff, nb_block_last_coeff)
   	//#pragma omp parallel sections firstprivate(scratch, nb_block_coeff, nb_block_last_coeff, ABpts_mone_sign, Apts_mone_sign, Bpts_mone_sign)
   	#pragma omp parallel sections
@@ -440,7 +455,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
     		mpn_mul_n(ABpts_zero, Apts_zero, Bpts_zero, nb_block_coeff);
     		//printf("5e\n");
     	}	
-    }
+    }*/
 
     //printf("----------------\n");
 
@@ -634,11 +649,11 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	
 
-	int size_table[5] = {nb_block_coeff * 2, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2};
+	int size_table_[5] = {nb_block_coeff * 2, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2 + 1, nb_block_coeff * 2};
 	mp_limb_t* ab_table[5] = {ab0, ab1, ab2, ab3, ab4};
 
 	#define current ab_table[i]
-	#define current_size size_table[i]
+	#define current_size size_table_[i]
 
 	for (int i = 0; i < 5; i++){
 
@@ -768,7 +783,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 
 	//free for non scratch version only
-	free(Apts_one);
+	/*free(Apts_one);
 	free(Apts_mone);
 	free(Apts_two);
 
@@ -788,13 +803,13 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	free(ab3);
 	free(ab4);
 
-	free(aux_inter_6);
+	free(aux_inter_6);*/
 
 	
 
 }
 
-void test(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
+void lohi22(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 
 
 
@@ -835,7 +850,7 @@ void test(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 
     }
 
-    /*
+  	/*
 	//accs[0] = a_lo * b_lo
 	mpn_mul_n(accs[0], a_lo, b_lo, nb_limbs_half);
 	
@@ -852,6 +867,79 @@ void test(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[1], nb_limbs);
 	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[2], nb_limbs);
 	mpn_add_n(ab + nb_limbs, ab, accs[3], nb_limbs);
+
+
+}
+
+void lomidhi32(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
+
+	mp_limb_t accs[6][128]; // will hold intermediate values 
+
+	int nb_limbs_half = nb_limbs / 2;
+
+	int nb_block_coeff = (nb_limbs + 2) /  3;	
+	int nb_block_last_coeff = nb_limbs - 2 * nb_block_coeff; 
+
+	mp_limb_t* a_lo  = a;						// nb_block_coeff	   
+	mp_limb_t* a_mid = a + nb_block_coeff;		// nb_block_coeff
+	mp_limb_t* a_hi  = a + nb_limbs_half * 2;   // nb_block_last_coeff
+
+	mp_limb_t* b_lo = b; 				    // nb_limbs_half
+	mp_limb_t* b_hi = b + nb_limbs_half; 	// nb_limbs_half
+
+	/*mpn_mul(accs[0], a_lo, nb_block_coeff, b_lo, nb_limbs_half);
+
+	mpn_mul(accs[1], a_lo, nb_block_coeff, b_hi, nb_limbs_half);
+
+	mpn_mul(accs[2], a_mid, nb_block_coeff, b_lo, nb_limbs_half);
+
+	mpn_mul(accs[3], a_mid, nb_block_coeff, b_hi, nb_limbs_half);
+
+	mpn_mul(accs[4], a_hi, nb_block_coeff, b_lo, nb_limbs_half);
+
+	mpn_mul(accs[5], a_hi, nb_block_coeff, b_hi, nb_limbs_half);*/
+
+	
+	omp_set_num_threads(6);
+	#pragma omp parallel sections
+  	{
+  		
+		#pragma omp section
+    	{
+    		mpn_mul(accs[0], a_lo, nb_block_coeff, b_lo, nb_limbs_half);
+    	}
+    	#pragma omp section
+    	{
+			mpn_mul(accs[1], a_lo, nb_block_coeff, b_hi, nb_limbs_half);
+    	}
+    	#pragma omp section
+    	{
+    		mpn_mul(accs[2], a_mid, nb_block_coeff, b_lo, nb_limbs_half);
+    	}
+    	#pragma omp section
+    	{
+    		mpn_mul(accs[3], a_mid, nb_block_coeff, b_hi, nb_limbs_half);
+    	}
+    	#pragma omp section
+    	{
+    		mpn_mul(accs[4], a_hi, nb_block_last_coeff, b_lo, nb_limbs_half);
+    	}
+    	#pragma omp section
+    	{
+    		mpn_mul(accs[5], a_hi, nb_block_last_coeff, b_hi, nb_limbs_half);
+    	}
+
+    }
+
+	mpn_copyd(ab, accs[0], nb_limbs);
+	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[1], nb_limbs);
+	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[2], nb_limbs);
+	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[3], nb_limbs);
+	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[4], nb_limbs);
+	mpn_add_n(ab + nb_limbs, ab, accs[4], nb_limbs);
+	
+
+  	
 
 
 }
