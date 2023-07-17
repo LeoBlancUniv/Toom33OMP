@@ -115,90 +115,100 @@ static inline uint64_t cpucyclesStop(void) {
 	return ((uint64_t)lo)^(((uint64_t)hi)<<32);
 }
 
+
+
 static inline void gmp_lomidhi32_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *soak, mp_limb_t *c_limbs, mp_limb_t *soak2, int nb_limbs){
+		mp_limb_t *soak, mp_limb_t *c_limbs, mp_limb_t *soak2, int nb_limbs, int check){
 
 		UNUSED(soak);
 		UNUSED(soak2);
 
 		lomidhi32(a_limbs, b_limbs, nb_limbs, c_limbs);
 
-		/*mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+		if (check && skip == 0){
+			skip = 1;
+			mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
 
-		mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
+			mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
 
+
+			
+			if (mpn_cmp(x, c_limbs, 2 * nb_limbs) != 0){
+				mp_ptr xor = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+				mpn_xor_n(xor, x, c_limbs, nb_limbs);
+				
+				
+				free(xor);
+
+				int hd = mpn_hamdist(x, c_limbs, nb_limbs);
+
+				
+				printf("error in gmp_lomidhi32_wrapper\n");
+				gmp_printf("a : %Nd\n\n", a_limbs, nb_limbs);
+				gmp_printf("b : %Nd\n\n", b_limbs, nb_limbs);
+
+				gmp_printf("c : %Nx\n\n", c_limbs, nb_limbs * 2);
+				gmp_printf("x : %Nx\n\n", x, nb_limbs * 2);
+				gmp_printf("d : %Nx\n\n", xor, nb_limbs * 2);
+				printf("%d\n", hd);
+
+			}
 
 		
-		if (skip == 0 && mpn_cmp(x, c_limbs, 2 * nb_limbs) != 0){
-			skip = 1;
-			mp_ptr xor = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-			mpn_xor_n(xor, x, c_limbs, nb_limbs);
-			
-			
-			free(xor);
 
-			int hd = mpn_hamdist(x, c_limbs, nb_limbs);
-
-			
-
-			gmp_printf("a : %Nd\n\n", a_limbs, nb_limbs);
-			gmp_printf("b : %Nd\n\n", b_limbs, nb_limbs);
-
-			gmp_printf("c : %Nx\n\n", c_limbs, nb_limbs * 2);
-			gmp_printf("x : %Nx\n\n", x, nb_limbs * 2);
-			gmp_printf("d : %Nx\n\n", xor, nb_limbs * 2);
-			printf("%d\n", hd);
-
+			free(x);
 		}
 
 		
-
-		free(x);*/
 }
 
 static inline void gmp_lohi22_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *soak, mp_limb_t *c_limbs, mp_limb_t *soak2, int nb_limbs){
+		mp_limb_t *soak, mp_limb_t *c_limbs, mp_limb_t *soak2, int nb_limbs, int check){
 
 		UNUSED(soak);
 		UNUSED(soak2);
 
 		lohi22(a_limbs, b_limbs, nb_limbs, c_limbs);
 
-		/*mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-
-		mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
-
-
-		
-		if (skip == 0 && mpn_cmp(x, c_limbs, 2 * nb_limbs) != 0){
+		if (check && skip == 0){
 			skip = 1;
-			mp_ptr xor = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-			mpn_xor_n(xor, x, c_limbs, nb_limbs);
-			
-			
-			free(xor);
+			mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
 
-			int hd = mpn_hamdist(x, c_limbs, nb_limbs);
+			mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
+
 
 			
+			if (mpn_cmp(x, c_limbs, 2 * nb_limbs) != 0){
+				
+				mp_ptr xor = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+				mpn_xor_n(xor, x, c_limbs, nb_limbs);
+				
+				
+				free(xor);
 
-			gmp_printf("a : %Nd\n\n", a_limbs, nb_limbs);
-			gmp_printf("b : %Nd\n\n", b_limbs, nb_limbs);
+				int hd = mpn_hamdist(x, c_limbs, nb_limbs);
 
-			gmp_printf("c : %Nx\n\n", c_limbs, nb_limbs * 2);
-			gmp_printf("x : %Nx\n\n", x, nb_limbs * 2);
-			gmp_printf("d : %Nx\n\n", xor, nb_limbs * 2);
-			printf("%d\n", hd);
+				
+				printf("error in gmp_lohi22_wrapper\n");
 
-		}
+				gmp_printf("a : %Nd\n\n", a_limbs, nb_limbs);
+				gmp_printf("b : %Nd\n\n", b_limbs, nb_limbs);
+
+				gmp_printf("c : %Nx\n\n", c_limbs, nb_limbs * 2);
+				gmp_printf("x : %Nx\n\n", x, nb_limbs * 2);
+				gmp_printf("d : %Nx\n\n", xor, nb_limbs * 2);
+				printf("%d\n", hd);
+
+			}
 
 		
 
-		free(x);*/
+			free(x);
+		}
 }
 
 static inline void gmp_toom3_mpn_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *soak, mp_limb_t *c_limbs, mp_limb_t *soak2, int nb_limbs){
+		mp_limb_t *soak, mp_limb_t *c_limbs, mp_limb_t *soak2, int nb_limbs, int check){
 
 		UNUSED(soak);
 		UNUSED(soak2);
@@ -207,42 +217,46 @@ static inline void gmp_toom3_mpn_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 
 		toom3_mpn(a_limbs, b_limbs, nb_limbs, c_limbs, scratch, skip);
 
-		/*mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-
-		mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
-
-
-		
-		if (skip == 0 && mpn_cmp(x, c_limbs, 2 * nb_limbs) != 0){
+		if (check && skip == 0){
 			skip = 1;
-			mp_ptr xor = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-			mpn_xor_n(xor, x, c_limbs, nb_limbs);
-			
-			
-			free(xor);
+			mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
 
-			int hd = mpn_hamdist(x, c_limbs, nb_limbs);
+			mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
+
 
 			
+			if (mpn_cmp(x, c_limbs, 2 * nb_limbs) != 0){
+				
+				mp_ptr xor = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+				mpn_xor_n(xor, x, c_limbs, nb_limbs);
+				
+				
+				free(xor);
 
-			gmp_printf("a : %Nd\n\n", a_limbs, nb_limbs);
-			gmp_printf("b : %Nd\n\n", b_limbs, nb_limbs);
+				int hd = mpn_hamdist(x, c_limbs, nb_limbs);
 
-			gmp_printf("c : %Nx\n\n", c_limbs, nb_limbs * 2);
-			gmp_printf("x : %Nx\n\n", x, nb_limbs * 2);
-			gmp_printf("d : %Nx\n\n", xor, nb_limbs * 2);
-			printf("%d\n", hd);
+				
+				printf("error in gmp_toom3_mpn_wrapper\n");
 
-		}
+				gmp_printf("a : %Nd\n\n", a_limbs, nb_limbs);
+				gmp_printf("b : %Nd\n\n", b_limbs, nb_limbs);
+
+				gmp_printf("c : %Nx\n\n", c_limbs, nb_limbs * 2);
+				gmp_printf("x : %Nx\n\n", x, nb_limbs * 2);
+				gmp_printf("d : %Nx\n\n", xor, nb_limbs * 2);
+				printf("%d\n", hd);
+
+			}
 
 		
 
-		free(x);*/
+			free(x);
+		}
 
 }
 
 static inline void gmp_toom3_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *soak, mp_limb_t *c_limbs, mp_limb_t *soak2, int nb_limbs)
+		mp_limb_t *soak, mp_limb_t *c_limbs, mp_limb_t *soak2, int nb_limbs, int check)
 {
 	UNUSED(soak);
 	UNUSED(soak2);
@@ -251,39 +265,41 @@ static inline void gmp_toom3_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 
 	mpn_toom33_mul(c_limbs, a_limbs, nb_limbs, b_limbs, nb_limbs, scratch);
 
-	/*mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-
-		mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
-
-
-		
-		if (skip == 0 && mpn_cmp(x, c_limbs, 2 * nb_limbs) != 0){
+	if (check && skip == 0){
 			skip = 1;
-			mp_ptr xor = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-			mpn_xor_n(xor, x, c_limbs, nb_limbs);
-			
-			
-			free(xor);
+			mp_ptr x = calloc(nb_limbs * 2, sizeof(mp_limb_t));
 
-			int hd = mpn_hamdist(x, c_limbs, nb_limbs);
+			mpn_mul_n(x, a_limbs, b_limbs, nb_limbs);
+
 
 			
+			if (mpn_cmp(x, c_limbs, 2 * nb_limbs) != 0){
+				
+				mp_ptr xor = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+				mpn_xor_n(xor, x, c_limbs, nb_limbs);
+				
+				
+				free(xor);
 
-			gmp_printf("a : %Nx\n\n", a_limbs, nb_limbs);
-			gmp_printf("b : %Nx\n\n", b_limbs, nb_limbs);
+				int hd = mpn_hamdist(x, c_limbs, nb_limbs);
 
-			gmp_printf("c : %Nx\n\n", c_limbs, nb_limbs * 2);
-			gmp_printf("x : %Nx\n\n", x, nb_limbs * 2);
-			gmp_printf("d : %Nx\n\n", xor, nb_limbs * 2);
-			printf("%d\n", hd);
+				
+				printf("error in gmp_toom3_wrapper\n");
 
-		}
+				gmp_printf("a : %Nd\n\n", a_limbs, nb_limbs);
+				gmp_printf("b : %Nd\n\n", b_limbs, nb_limbs);
+
+				gmp_printf("c : %Nx\n\n", c_limbs, nb_limbs * 2);
+				gmp_printf("x : %Nx\n\n", x, nb_limbs * 2);
+				gmp_printf("d : %Nx\n\n", xor, nb_limbs * 2);
+				printf("%d\n", hd);
+
+			}
 
 		
 
-		free(x);*/
-
-
+			free(x);
+		}
 
 	
 }
@@ -291,7 +307,7 @@ static inline void gmp_toom3_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 
 
 static inline void gmp_lowlevel_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs)
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check)
 {
 	mpn_mul_n(c_limbs, a_limbs, b_limbs, nb_limbs); // compute: z = y*x
 	//mpn_tdiv_qr(q_limbs, a_limbs, 0, c_limbs, (nb_limbs*2), p_limbs, nb_limbs); // compute: y = z%p
@@ -300,7 +316,7 @@ static inline void gmp_lowlevel_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 
 
 static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t r, mp_limb_t *c_limbs, mp_limb_t *q_limbs, uint8_t W, void (*gmp_wrapper)(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs))
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check))
 {
 
 	uint64_t timermin, timermax, meanTimermin = 0, medianTimer = 0,
@@ -317,7 +333,7 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 		p_limbs = mpz_limbs_modify (modul_p, nb_limbs);
 		a_limbs = mpz_limbs_modify (A, nb_limbs);
 		b_limbs = mpz_limbs_modify (B, nb_limbs);
-		gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs);
+		gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs, 1);
 		mpn_zero(scratch2, 10000);
 		mpn_zero(c_limbs, 2 * nb_limbs);
 
@@ -344,7 +360,7 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 			t1 = cpucyclesStart();
 			// We call the function W times to get an accurate measurement.
 			for(int soak=0; soak < W; soak++){
-				gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs);
+				gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs, 0);
 			}
 			t2 = cpucyclesStop();
 
@@ -392,26 +408,31 @@ void do_benchgmp(uint64_t retcycles[3], const char* pstr, const uint8_t W)
 	
 	q_limbs = (mp_limb_t*) calloc ((nb_limbs+1), sizeof(mp_limb_t));
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
+
 	
 	retcycles[0] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lowlevel_wrapper);
 	
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
+	skip = 0;
 
 	retcycles[1] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_toom3_wrapper);
 
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
+	skip = 0;
 
 	retcycles[2] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_toom3_mpn_wrapper);
 	
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
+	skip = 0;
 
 	retcycles[3] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lohi22_wrapper);
 
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
+	skip = 0;
 
 	retcycles[4] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lomidhi32_wrapper);
 
@@ -445,7 +466,7 @@ int main(void)
 
 	uint64_t cyclesGMP8192[5];
 
-	do_benchgmp(cyclesGMP8192, p8192, 1);
+	do_benchgmp(cyclesGMP8192, p8192, 5);
 
 
 	printf("low : %lu \n", cyclesGMP8192[0]);

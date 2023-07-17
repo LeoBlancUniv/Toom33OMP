@@ -195,10 +195,9 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	//Apts_inf <- a2 :
 
+
 	mpn_copyd(Apts_inf, a2, nb_block_last_coeff);
 	//should only be usefull if using the non scratch version, or you are just copying a2 into itself
-
-
 
 	//Apts_two <- 4*a2 + 2*a1 + a0 : 
 
@@ -396,6 +395,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 	//ABpts calc
 
 	//parallel version using OpenMP with parallel for
+
 
 	mp_limb_t* Apts_table[5] = {Apts_inf, Apts_two, Apts_mone, Apts_one, Apts_zero};
 	mp_limb_t* Bpts_table[5] = {Bpts_inf, Bpts_two, Bpts_mone, Bpts_one, Bpts_zero};
@@ -823,7 +823,7 @@ void lohi22(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 	mp_limb_t* b_lo = b; 				    // nb_limbs_half
 	mp_limb_t* b_hi = b + nb_limbs_half; 	// nb_limbs_half
 
-	omp_set_num_threads(4);
+	/*omp_set_num_threads(4);
 	#pragma omp parallel sections
   	{
   		
@@ -848,6 +848,11 @@ void lohi22(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 			mpn_mul_n(accs[3], a_hi, b_hi, nb_limbs_half);
     	}
 
+    }*/
+	omp_set_num_threads(4);
+    #pragma omp parallel for
+    for (int i = 0; i < 4; i++){
+    	mpn_mul_n(accs[i], a + nb_limbs_half * (i&1), b + nb_limbs_half * ((i&2)>0), nb_limbs_half);
     }
 
   	/*
@@ -864,9 +869,9 @@ void lohi22(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 	mpn_mul_n(accs[3], a_hi, b_hi, nb_limbs_half);
 	*/
 	mpn_copyd(ab, accs[0], nb_limbs);
-	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[1], nb_limbs);
-	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[2], nb_limbs);
-	mpn_add_n(ab + nb_limbs, ab, accs[3], nb_limbs);
+	ab[nb_limbs + nb_limbs_half] += mpn_add_n(ab + nb_limbs_half, ab + nb_limbs_half, accs[1], nb_limbs);
+	ab[nb_limbs + nb_limbs_half] += mpn_add_n(ab + nb_limbs_half, ab + nb_limbs_half, accs[2], nb_limbs);
+	mpn_add_n(ab + nb_limbs, ab + nb_limbs, accs[3], nb_limbs);
 
 
 }
@@ -899,6 +904,12 @@ void lomidhi32(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 
 	mpn_mul(accs[5], a_hi, nb_block_coeff, b_hi, nb_limbs_half);*/
 
+	/*omp_set_num_threads(6);
+	#pragma omp parallel for
+	for (int i = 0; i < 6; i++)
+	{
+		mpn_mul_n
+	}*/
 	
 	omp_set_num_threads(6);
 	#pragma omp parallel sections
@@ -931,15 +942,18 @@ void lomidhi32(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 
     }
 
-	mpn_copyd(ab, accs[0], nb_limbs);
-	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[1], nb_limbs);
-	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[2], nb_limbs);
-	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[3], nb_limbs);
-	ab[nb_limbs] += mpn_add_n(ab + nb_limbs_half, ab, accs[4], nb_limbs);
-	mpn_add_n(ab + nb_limbs, ab, accs[4], nb_limbs);
+	mpn_copyd(ab, accs[0], nb_limbs_half + nb_block_coeff);
+	
+	ab[nb_limbs] += mpn_add_n(ab + nb_block_coeff, ab + nb_block_coeff, accs[1], nb_limbs);
+	ab[nb_limbs] += mpn_add_n(ab + nb_block_coeff, ab + nb_block_coeff, accs[2], nb_limbs);
+	
+	ab[nb_limbs + 2 * nb_block_coeff] += mpn_add_n(ab + nb_limbs, ab + nb_limbs, accs[3], nb_limbs);
+	ab[nb_limbs + 2 * nb_block_coeff] += mpn_add_n(ab + nb_limbs, ab + nb_limbs, accs[4], nb_limbs);
+	mpn_add_n(ab + nb_limbs + 2 * nb_block_coeff, ab + nb_limbs + 2 * nb_block_coeff, accs[5], nb_limbs);
 	
 
   	
 
 
 }
+
