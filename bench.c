@@ -13,7 +13,7 @@
 #include "mul_mpn.h"
 
 #define NTEST 501
-#define NSAMPLES 1001
+#define NSAMPLES 1
 
 #define UNUSED(X) (void)(X)
 
@@ -366,6 +366,16 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 	uint64_t *cycles = (uint64_t *)calloc(NTEST,sizeof(uint64_t));
 	mp_limb_t *p_limbs, *a_limbs, *b_limbs;
 	int nb_limbs = mpz_size(modul_p);
+
+	mpz_urandomm(A, r, modul_p);
+	mpz_urandomm(B, r, modul_p);
+	
+	p_limbs = mpz_limbs_modify (modul_p, nb_limbs);
+	a_limbs = mpz_limbs_modify (A, nb_limbs);
+	b_limbs = mpz_limbs_modify (B, nb_limbs);
+
+	check_mul_mpn(a_limbs, b_limbs, p_limbs, nb_limbs);
+
 	for(int i=0;i<NTEST;i++)
 	{
 	// Here we "heat" the cache memory.
@@ -452,7 +462,7 @@ void do_benchgmp(uint64_t retcycles[3], const char* pstr, const uint8_t W)
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 
 	
-	retcycles[0] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lowlevel_wrapper);
+	/*retcycles[0] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lowlevel_wrapper);
 	printf("low : %lu \n", retcycles[0]);
 	
 	free(c_limbs);
@@ -480,12 +490,14 @@ void do_benchgmp(uint64_t retcycles[3], const char* pstr, const uint8_t W)
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 	skip = 0;
 
-	//retcycles[4] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lomidhi32_wrapper);*/
+	//retcycles[4] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lomidhi32_wrapper);
 	//printf("lomidhi32 : %lu \n", retcycles[4]);
 
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 	skip = 0;
+
+	*/
 
 	p_limbs = mpz_limbs_modify (modul_p, nb_limbs);
 	mip_limbs = (mp_limb_t*) calloc (nb_limbs, sizeof(mp_limb_t));
@@ -493,8 +505,12 @@ void do_benchgmp(uint64_t retcycles[3], const char* pstr, const uint8_t W)
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 	mpn_binvert(mip_limbs, p_limbs, nb_limbs, c_limbs);
 	
-	retcycles[5] = gmpbench(A, B, modul_p, r, mip_limbs, q_limbs, W, gmp_montgomery_wrapper);
-	printf("mont_original : %lu \n", retcycles[5]);
+	retcycles[6] = gmpbench(A, B, modul_p, r, mip_limbs, q_limbs, W, gmp_montgomery_wrapper);
+	printf("mont_original : %lu \n", retcycles[6]);
+
+	
+
+
 	
 	/*mp_limb_t mip0;
 	binvert_limb (mip0, p_limbs[0]);

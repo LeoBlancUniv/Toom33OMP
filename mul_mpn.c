@@ -950,10 +950,83 @@ void lomidhi32(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 	ab[nb_limbs + 2 * nb_block_coeff] += mpn_add_n(ab + nb_limbs, ab + nb_limbs, accs[3], nb_limbs);
 	ab[nb_limbs + 2 * nb_block_coeff] += mpn_add_n(ab + nb_limbs, ab + nb_limbs, accs[4], nb_limbs);
 	mpn_add_n(ab + nb_limbs + 2 * nb_block_coeff, ab + nb_limbs + 2 * nb_block_coeff, accs[5], nb_limbs);
-	
-
-  	
-
 
 }
 
+void mullo_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
+
+	mp_limb_t accs[3][128];
+
+	mpn_mul_n(accs[0], a, b, nb_limbs / 2);
+	mpn_mullo_n(accs[1], a, b + nb_limbs / 2, nb_limbs / 2);
+	mpn_mullo_n(accs[2], a + nb_limbs / 2, b, nb_limbs / 2);
+
+	mpn_copyd(ab, accs[0], nb_limbs);
+	mpn_add_n(ab + nb_limbs / 2, ab + nb_limbs / 2, accs[1], nb_limbs / 2);
+	mpn_add_n(ab + nb_limbs / 2, ab + nb_limbs / 2, accs[2], nb_limbs / 2);
+
+}
+
+void mul_redc_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, mp_limb_t* p_inv, int nb_limbs, mp_limb_t* ab){
+	mp_limb_t c[2 * nb_limbs];
+	
+
+	mpn_mul_n(c, a, b, nb_limbs); //to change to other mul later
+
+	
+	mp_ptr x, y;
+	mp_ptr scratch;
+  	mp_limb_t cy; //carry
+ 	mp_size_t rn, rn_4;
+  	TMP_DECL;
+  	TMP_MARK;
+  	
+  	rn = mpn_mulmod_bnm1_next_size (nb_limbs);
+  	rn_4 = mpn_mulmod_bnm1_next_size (nb_limbs / 2);
+
+
+  	scratch = TMP_ALLOC_LIMBS (nb_limbs + rn + rn_4 * 4 + 
+  		4 * mpn_mulmod_bnm1_itch (rn, nb_limbs / 2, nb_limbs / 2));
+
+  	int scratch_s = mpn_mulmod_bnm1_itch (rn, nb_limbs / 2, nb_limbs / 2);
+
+  	x = scratch;
+  	y = scratch + nb_limbs;
+  	mp_limb_t* y_ = y + rn;
+  	mp_limb_t* scratch_ = y_ + rn_4 * 4;
+
+  	mullo_mpn(c, p_inv, nb_limbs, x);
+
+  	omp_set_num_threads(4);
+    #pragma omp parallel for
+    for (int i = 0; i < 4; i++){
+    	mpn_mulmod_bnm1(y_ + rn_4 * i, rn_4, 
+    		x + (nb_limbs / 2) * (i&1), nb_limbs / 2,
+    		p + (nb_limbs / 2) * ((i&2)>0), nb_limbs / 2, 
+    		scratch_ + (scratch_s) * i);
+    }
+
+  	TMP_FREE;
+
+}
+
+void check_mul_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, int nb_limbs){
+
+	mp_limb_t* c = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+
+	mpn_mul_n(c, a, b, nb_limbs);
+	gmp_printf("c : %Nx\n\n", c ,nb_limbs);
+
+	mp_limb_t* c_mullo = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+	mullo_mpn(a, b, nb_limbs, c_mullo);
+	gmp_printf("c : %Nx\n\n", c_mullo, nb_limbs);
+	free(c_mullo);
+
+	mp_limb_t* c_mul_redc_mpn = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+	mullo_mpn(a, b, nb_limbs, c_mul_redc_mpn);
+	gmp_printf("c : %Nx\n\n", c_mul_redc_mpn, 2 * nb_limbs);
+	free(c_mul_redc_mpn);
+
+	
+	free(c);
+}
