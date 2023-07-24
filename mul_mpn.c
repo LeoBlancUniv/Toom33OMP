@@ -403,8 +403,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 	int size_table[5] = {nb_block_last_coeff, nb_block_coeff + 1, nb_block_coeff +1, nb_block_coeff + 1, nb_block_coeff};
 
-	omp_set_num_threads(5);
-	#pragma omp parallel for firstprivate(scratch, nb_block_coeff, nb_block_last_coeff, Apts_table, Bpts_table, ABpts_table, size_table)
+	//#pragma omp parallel for firstprivate(scratch, nb_block_coeff, nb_block_last_coeff, Apts_table, Bpts_table, ABpts_table, size_table)
 	for (int i = 0; i < 5; i++){
 		mpn_mul_n(ABpts_table[i], Apts_table[i], Bpts_table[i], size_table[i]);
 	}
@@ -823,51 +822,13 @@ void lohi22(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 	mp_limb_t* b_lo = b; 				    // nb_limbs_half
 	mp_limb_t* b_hi = b + nb_limbs_half; 	// nb_limbs_half
 
-	/*omp_set_num_threads(4);
-	#pragma omp parallel sections
-  	{
-  		
-		#pragma omp section
-    	{
-    		//accs[0] = a_lo * b_lo
-			mpn_mul_n(accs[0], a_lo, b_lo, nb_limbs_half);
-    	}
-    	#pragma omp section
-    	{
-			//accs[1] = a_hi * b_lo
-			mpn_mul_n(accs[1], a_hi, b_lo, nb_limbs_half);
-    	}
-    	#pragma omp section
-    	{
-    		//accs[2] = a_lo * b_hi
-			mpn_mul_n(accs[2], a_lo, b_hi, nb_limbs_half);
-    	}
-    	#pragma omp section
-    	{
-    		//accs[3] = a_hi * b_hi
-			mpn_mul_n(accs[3], a_hi, b_hi, nb_limbs_half);
-    	}
-
-    }*/
-	omp_set_num_threads(4);
+	
     #pragma omp parallel for
     for (int i = 0; i < 4; i++){
     	mpn_mul_n(accs[i], a + nb_limbs_half * (i&1), b + nb_limbs_half * ((i&2)>0), nb_limbs_half);
     }
 
-  	/*
-	//accs[0] = a_lo * b_lo
-	mpn_mul_n(accs[0], a_lo, b_lo, nb_limbs_half);
-	
-	//accs[1] = a_hi * b_lo
-	mpn_mul_n(accs[1], a_hi, b_lo, nb_limbs_half);
-
-	//accs[2] = a_lo * b_hi
-	mpn_mul_n(accs[2], a_lo, b_hi, nb_limbs_half);
-
-	//accs[3] = a_hi * b_hi
-	mpn_mul_n(accs[3], a_hi, b_hi, nb_limbs_half);
-	*/
+  	
 	mpn_copyd(ab, accs[0], nb_limbs);
 	ab[nb_limbs + nb_limbs_half] += mpn_add_n(ab + nb_limbs_half, ab + nb_limbs_half, accs[1], nb_limbs);
 	ab[nb_limbs + nb_limbs_half] += mpn_add_n(ab + nb_limbs_half, ab + nb_limbs_half, accs[2], nb_limbs);
@@ -904,8 +865,8 @@ void lomidhi32(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 
 	mpn_mul(accs[5], a_hi, nb_block_coeff, b_hi, nb_limbs_half);*/
 
-	/*omp_set_num_threads(6);
-	#pragma omp parallel for
+
+	/*#pragma omp parallel for
 	for (int i = 0; i < 6; i++)
 	{
 		mpn_mul_n
@@ -957,9 +918,28 @@ void mullo_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab){
 
 	mp_limb_t accs[3][128];
 
-	mpn_mul_n(accs[0], a, b, nb_limbs / 2);
+	#pragma omp parallel sections
+	{
+		#pragma omp section
+		{
+			mpn_mul_n(accs[0], a, b, nb_limbs / 2);
+		}
+
+		#pragma omp section
+		{
+			mpn_mullo_n(accs[1], a, b + nb_limbs / 2, nb_limbs / 2);
+		}
+
+		#pragma omp section
+		{
+			mpn_mullo_n(accs[2], a + nb_limbs / 2, b, nb_limbs / 2);
+		}
+	}
+
+	
+	/*mpn_mul_n(accs[0], a, b, nb_limbs / 2);
 	mpn_mullo_n(accs[1], a, b + nb_limbs / 2, nb_limbs / 2);
-	mpn_mullo_n(accs[2], a + nb_limbs / 2, b, nb_limbs / 2);
+	mpn_mullo_n(accs[2], a + nb_limbs / 2, b, nb_limbs / 2);*/
 
 	mpn_copyd(ab, accs[0], nb_limbs);
 	mpn_add_n(ab + nb_limbs / 2, ab + nb_limbs / 2, accs[1], nb_limbs / 2);
@@ -971,8 +951,8 @@ void mul_redc_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, mp_limb_t* p_inv, in
 	mp_limb_t c[2 * nb_limbs];
 	
 
-	mpn_mul_n(c, a, b, nb_limbs); //to change to other mul later
-
+	//mpn_mul_n(c, a, b, nb_limbs); //to change to other mul later
+	lohi22(a, b, nb_limbs, c);
 	
 	mp_ptr x, y;
 	mp_ptr scratch;
@@ -981,8 +961,10 @@ void mul_redc_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, mp_limb_t* p_inv, in
   	TMP_DECL;
   	TMP_MARK;
   	
-  	rn = mpn_mulmod_bnm1_next_size (nb_limbs);
-  	rn_4 = mpn_mulmod_bnm1_next_size (nb_limbs / 2);
+  	rn = mpn_mulmod_bnm1_next_size (nb_limbs); //128
+  	rn_4 = mpn_mulmod_bnm1_next_size (nb_limbs / 2); //64
+
+  	//printf("%d %d\n\n", rn, rn_4);
 
 
   	scratch = TMP_ALLOC_LIMBS (nb_limbs + rn + rn_4 * 4 + 
@@ -997,7 +979,9 @@ void mul_redc_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, mp_limb_t* p_inv, in
 
   	mullo_mpn(c, p_inv, nb_limbs, x);
 
-  	omp_set_num_threads(4);
+
+  	//split of mpn_mulmod_bnm1
+  	
     #pragma omp parallel for
     for (int i = 0; i < 4; i++){
     	mpn_mulmod_bnm1(y_ + rn_4 * i, rn_4, 
@@ -1006,13 +990,35 @@ void mul_redc_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, mp_limb_t* p_inv, in
     		scratch_ + (scratch_s) * i);
     }
 
+    //y reconstruction
+    mpn_copyd(y, y_, rn_4);
+	y[rn + rn_4] += mpn_add_n(y + rn_4, y + rn_4, y_ + rn_4, rn);
+	y[rn + rn_4] += mpn_add_n(y + rn_4, y + rn_4, y_ + (rn_4 * 2), rn);
+	mpn_add_n(y + rn, y + rn, y_ + (rn_4 * 3), rn);
+
+	//final step
+	cy = mpn_sub_n (y + rn, y, c, 2*nb_limbs - rn);		
+	//MPN_DECR_U (y + 2*nb_limbs - rn, rn, cy);
+
+	cy = mpn_sub_n (ab, c + nb_limbs, y + nb_limbs, nb_limbs);
+	if (cy != 0)
+    mpn_add_n (ab, ab, p, nb_limbs);
+
+
   	TMP_FREE;
+
+
+
 
 }
 
 void check_mul_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, int nb_limbs){
 
 	mp_limb_t* c = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+
+	mp_limb_t* p_inv = (mp_limb_t*) calloc (nb_limbs, sizeof(mp_limb_t));
+	mp_limb_t* scratch_p_inv = calloc(nb_limbs * 2, sizeof(mp_limb_t));
+	mpn_binvert(p_inv, p, nb_limbs, scratch_p_inv);
 
 	mpn_mul_n(c, a, b, nb_limbs);
 	gmp_printf("c : %Nx\n\n", c ,nb_limbs);
@@ -1023,10 +1029,11 @@ void check_mul_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, int nb_limbs){
 	free(c_mullo);
 
 	mp_limb_t* c_mul_redc_mpn = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-	mullo_mpn(a, b, nb_limbs, c_mul_redc_mpn);
+
+	mul_redc_mpn(a, b, p, p_inv, nb_limbs, c_mul_redc_mpn);
 	gmp_printf("c : %Nx\n\n", c_mul_redc_mpn, 2 * nb_limbs);
 	free(c_mul_redc_mpn);
 
-	
+	free(p_inv);
 	free(c);
 }
