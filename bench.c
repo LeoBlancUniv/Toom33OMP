@@ -13,7 +13,7 @@
 #include "mul_mpn.h"
 
 #define NTEST 501
-#define NSAMPLES 1001
+#define NSAMPLES 1 //1001
 
 #define UNUSED(X) (void)(X)
 
@@ -208,7 +208,7 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 	a_limbs = mpz_limbs_modify (A, nb_limbs);
 	b_limbs = mpz_limbs_modify (B, nb_limbs);
 
-	//check_mul_mpn(a_limbs, b_limbs, p_limbs, nb_limbs);
+	check_mul_mpn(a_limbs, b_limbs, p_limbs, nb_limbs);
 
 	for(int i=0;i<NTEST;i++)
 	{
