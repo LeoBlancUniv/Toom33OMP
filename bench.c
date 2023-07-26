@@ -115,8 +115,8 @@ static inline uint64_t cpucyclesStop(void) {
 	return ((uint64_t)lo)^(((uint64_t)hi)<<32);
 }
 
-static inline void gmp_montgomery_mpn_para_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *mip_limbs, mp_limb_t *soak, int nb_limbs, int check)
+static inline void gmp_redc_mpn_para_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
+		mp_limb_t *p_limbs, mp_limb_t *mip_limbs, mp_limb_t *soak, int nb_limbs)
 {
 	UNUSED(soak);
 	mul_redc_mpn(a_limbs, b_limbs, p_limbs, mip_limbs, nb_limbs, a_limbs, 1);
@@ -124,8 +124,8 @@ static inline void gmp_montgomery_mpn_para_wrapper(mp_limb_t *a_limbs, mp_limb_t
 	
 }
 
-static inline void gmp_montgomery_mpn_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *mip_limbs, mp_limb_t *soak, int nb_limbs, int check)
+static inline void gmp_redc_mpn_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
+		mp_limb_t *p_limbs, mp_limb_t *mip_limbs, mp_limb_t *soak, int nb_limbs)
 {
 	UNUSED(soak);
 	mul_redc_mpn(a_limbs, b_limbs, p_limbs, mip_limbs, nb_limbs, a_limbs, 0);
@@ -134,7 +134,7 @@ static inline void gmp_montgomery_mpn_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_l
 }
 
 static inline void gmp_montgomery_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *mip_limbs, mp_limb_t *soak, int nb_limbs, int check)
+		mp_limb_t *p_limbs, mp_limb_t *mip_limbs, mp_limb_t *soak, int nb_limbs)
 {
 	UNUSED(soak);
 	mpn_mont_mul_red_n(a_limbs, a_limbs, b_limbs, p_limbs, mip_limbs, nb_limbs);
@@ -154,52 +154,52 @@ static inline void gmp_montgomery_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs
 		
 }*/
 
-static inline void gmp_lohi22_para_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check){
+static inline void gmp_schoolbook22_para_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs){
 
 
-		lohi22(a_limbs, b_limbs, nb_limbs, c_limbs, 1);
+		schoolbook22(a_limbs, b_limbs, nb_limbs, c_limbs, 1);
 		mpn_tdiv_qr(q_limbs, a_limbs, 0, c_limbs, (nb_limbs*2), p_limbs, nb_limbs); // compute: y = z%p
 
 }
 
-static inline void gmp_lohi22_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check){
+static inline void gmp_schoolbook22_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs){
 
 
-		lohi22(a_limbs, b_limbs, nb_limbs, c_limbs, 0);
+		schoolbook22(a_limbs, b_limbs, nb_limbs, c_limbs, 0);
 		mpn_tdiv_qr(q_limbs, a_limbs, 0, c_limbs, (nb_limbs*2), p_limbs, nb_limbs); // compute: y = z%p
 
 }
 
-static inline void gmp_toom3_mpn_para_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check){
+static inline void gmp_toom33_mpn_para_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs){
 
 		
 
 		scratch = scratch2;
 
-		toom3_mpn(a_limbs, b_limbs, nb_limbs, c_limbs, scratch, 1);
+		toom33_mpn(a_limbs, b_limbs, nb_limbs, c_limbs, scratch, 1);
 		mpn_tdiv_qr(q_limbs, a_limbs, 0, c_limbs, (nb_limbs*2), p_limbs, nb_limbs); // compute: y = z%p
 
 
 }
 
-static inline void gmp_toom3_mpn_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check){
+static inline void gmp_toom33_mpn_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs){
 
 		
 
 		scratch = scratch2;
 
-		toom3_mpn(a_limbs, b_limbs, nb_limbs, c_limbs, scratch, 0);
+		toom33_mpn(a_limbs, b_limbs, nb_limbs, c_limbs, scratch, 0);
 		mpn_tdiv_qr(q_limbs, a_limbs, 0, c_limbs, (nb_limbs*2), p_limbs, nb_limbs); // compute: y = z%p
 
 
 }
 
-static inline void gmp_toom3_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check)
+static inline void gmp_toom33_original_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs)
 {
 	
 
@@ -214,7 +214,7 @@ static inline void gmp_toom3_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 
 
 static inline void gmp_lowlevel_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check)
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs)
 {
 	mpn_mul_n(c_limbs, a_limbs, b_limbs, nb_limbs); // compute: z = y*x
 	mpn_tdiv_qr(q_limbs, a_limbs, 0, c_limbs, (nb_limbs*2), p_limbs, nb_limbs); // compute: y = z%p
@@ -223,7 +223,7 @@ static inline void gmp_lowlevel_wrapper(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
 
 
 static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t r, mp_limb_t *c_limbs, mp_limb_t *q_limbs, uint8_t W, void (*gmp_wrapper)(mp_limb_t *a_limbs, mp_limb_t *b_limbs,
-		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs, int check))
+		mp_limb_t *p_limbs, mp_limb_t *c_limbs, mp_limb_t *q_limbs, int nb_limbs))
 {
 
 	uint64_t timermin, timermax, meanTimermin = 0, medianTimer = 0,
@@ -250,7 +250,7 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 		p_limbs = mpz_limbs_modify (modul_p, nb_limbs);
 		a_limbs = mpz_limbs_modify (A, nb_limbs);
 		b_limbs = mpz_limbs_modify (B, nb_limbs);
-		gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs, 0);
+		gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs);
 		mpn_zero(scratch2, 10000);
 		//mpn_zero(c_limbs, 2 * nb_limbs);
 
@@ -277,7 +277,7 @@ static inline uint64_t gmpbench(mpz_t A, mpz_t B, mpz_t modul_p, gmp_randstate_t
 			t1 = cpucyclesStart();
 			// We call the function W times to get an accurate measurement.
 			for(int soak=0; soak < W; soak++){
-				gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs, 0);
+				gmp_wrapper(a_limbs, b_limbs, p_limbs, c_limbs, q_limbs, nb_limbs);
 			}
 			t2 = cpucyclesStop();
 
@@ -328,42 +328,42 @@ void do_benchgmp(uint64_t retcycles[3], const char* pstr, const uint8_t W)
 
 	
 	retcycles[0] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lowlevel_wrapper);
-	printf("low : %lu \n", retcycles[0]);
+	printf("lowlevel : %lu \n", retcycles[0]);
 	
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 	skip = 0;
 
-	retcycles[1] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_toom3_wrapper);
+	retcycles[1] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_toom33_original_wrapper);
 	printf("toom33_original : %lu \n", retcycles[1]);
 
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 	skip = 0;
 
-	retcycles[2] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_toom3_mpn_wrapper);
+	retcycles[2] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_toom33_mpn_wrapper);
 	printf("toom33_mpn : %lu \n", retcycles[2]);
 	
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 	skip = 0;
 
-	retcycles[3] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_toom3_mpn_para_wrapper);
+	retcycles[3] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_toom33_mpn_para_wrapper);
 	printf("toom33_mpn_para : %lu \n", retcycles[3]);
 	
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 	skip = 0;
 
-	retcycles[4] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lohi22_wrapper);
-	printf("lohi22 : %lu \n", retcycles[4]);
+	retcycles[4] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_schoolbook22_wrapper);
+	printf("schoolbook22 : %lu \n", retcycles[4]);
 
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
 	skip = 0;
 
-	retcycles[5] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_lohi22_para_wrapper);
-	printf("lohi22_para : %lu \n", retcycles[5]);
+	retcycles[5] = gmpbench(A, B, modul_p, r, c_limbs, q_limbs, W, gmp_schoolbook22_para_wrapper);
+	printf("schoolbook22_para : %lu \n", retcycles[5]);
 
 	free(c_limbs);
 	c_limbs = (mp_limb_t*) calloc ((nb_limbs*2), sizeof(mp_limb_t));
@@ -385,14 +385,14 @@ void do_benchgmp(uint64_t retcycles[3], const char* pstr, const uint8_t W)
 	mpn_binvert(mip_limbs, p_limbs, nb_limbs, c_limbs);
 	
 	retcycles[7] = gmpbench(A, B, modul_p, r, mip_limbs, q_limbs, W, gmp_montgomery_wrapper);
-	printf("mont_original : %lu \n", retcycles[7]);
+	printf("redc_original : %lu \n", retcycles[7]);
 
 	
-	retcycles[8] = gmpbench(A, B, modul_p, r, mip_limbs, q_limbs, W, gmp_montgomery_mpn_wrapper);
-	printf("mont_mpn : %lu \n", retcycles[8]);
+	retcycles[8] = gmpbench(A, B, modul_p, r, mip_limbs, q_limbs, W, gmp_redc_mpn_wrapper);
+	printf("redc_mpn : %lu \n", retcycles[8]);
 
-	retcycles[9] = gmpbench(A, B, modul_p, r, mip_limbs, q_limbs, W, gmp_montgomery_mpn_para_wrapper);
-	printf("mont_mpn_para : %lu \n", retcycles[9]);
+	retcycles[9] = gmpbench(A, B, modul_p, r, mip_limbs, q_limbs, W, gmp_redc_mpn_para_wrapper);
+	printf("redc_mpn_para : %lu \n", retcycles[9]);
 
 	
 	/*mp_limb_t mip0;

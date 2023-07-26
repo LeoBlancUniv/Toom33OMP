@@ -8,7 +8,7 @@
 
 #include "mul_mpn.h"
 
-void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_t* scratch, int para){
+void toom33_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_t* scratch, int para){
 	/*
 		gmp inspired toom cook 33 alg for multiplication
 	
@@ -670,7 +670,7 @@ void toom3_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, mp_limb_
 
 }
 
-void lohi22(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, int para){
+void schoolbook22(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, int para){
 
 
 
@@ -701,7 +701,7 @@ void lohi22(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, int para){
 
 }
 
-void lomidhi32(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, int para){
+void schoolbook32(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, int para){
 
 	mp_limb_t accs[6][128]; // will hold intermediate values 
 
@@ -778,7 +778,7 @@ void lomidhi32(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, int para
 
 }
 
-void mullo_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, int para){
+void schoolbooklow_mpn(mp_limb_t* a, mp_limb_t* b, int nb_limbs, mp_limb_t* ab, int para){
 
 	mp_limb_t accs[3][128];
 
@@ -822,11 +822,11 @@ void mul_mont_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, mp_limb_t* p_inv, in
 	mp_limb_t r[2 * nb_limbs];
 	mp_limb_t cy;
 	
-	lohi22(a, b, nb_limbs, c, para); //c = ab
+	schoolbook22(a, b, nb_limbs, c, para); //c = ab
 
-	mullo_mpn(c, p_inv, nb_limbs, q, para); //q = c * p_inv mod 2^8192
+	schoolbooklow_mpn(c, p_inv, nb_limbs, q, para); //q = c * p_inv mod 2^8192
 
-	lohi22(q, p, nb_limbs, q2, para); //q2 = qp
+	schoolbook22(q, p, nb_limbs, q2, para); //q2 = qp
 
 	/*cy = mpn_sub_n (q2 + nb_limbs, q2, c, nb_limbs);
 	mpn_sub(q2 + nb_limbs, q2 + nb_limbs, nb_limbs, &cy, 1);*/
@@ -849,7 +849,7 @@ void mul_redc_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, mp_limb_t* p_inv, in
 	
 
 	//mpn_mul_n(c, a, b, nb_limbs); //to change to other mul later
-	lohi22(a, b, nb_limbs, c, para);
+	schoolbook22(a, b, nb_limbs, c, para);
 	
 	mp_ptr x, y;
 	mp_ptr scratch;
@@ -874,7 +874,7 @@ void mul_redc_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, mp_limb_t* p_inv, in
   	mp_limb_t* y_ = y + rn; //scratch + nb_limbs + rn
   	mp_limb_t* scratch_ = y_ + rn_4 * 4; //scratch + nb_limbs + rn + 4 * rn_4
 
-  	mullo_mpn(c, p_inv, nb_limbs, x, para);
+  	schoolbooklow_mpn(c, p_inv, nb_limbs, x, para);
 
 
   	//split of mpn_mulmod_bnm1
@@ -951,7 +951,7 @@ void check_mul_mpn(mp_limb_t* a, mp_limb_t* b, mp_limb_t* p, int nb_limbs){
 	gmp_printf("redc : %Nx\n\n", c_redc, nb_limbs);
 
 	mp_limb_t* c_mullo = calloc(nb_limbs * 2, sizeof(mp_limb_t));
-	mullo_mpn(a, b, nb_limbs, c_mullo, 0);
+	schoolbooklow_mpn(a, b, nb_limbs, c_mullo, 0);
 	gmp_printf("clo : %Nx\n\n", c_mullo, nb_limbs);
 	free(c_mullo);
 
